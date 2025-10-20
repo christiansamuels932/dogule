@@ -8,10 +8,10 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "echo \"Define project-specific builds in each workspace\"",
-    "lint": "eslint \"{apps,packages}/**/*.{ts,tsx,js,jsx}\"",
-    "format": "prettier --write .",
-    "test": "vitest"
+    "dev": "docker compose up --build || echo ERR_DEV_UP_001",
+    "down": "docker compose down || echo ERR_DEV_DOWN_001",
+    "logs": "docker compose logs -f || echo ERR_DEV_LOGS_001",
+    "test": "docker compose run --rm server npm run test || echo ERR_TEST_001"
   },
   "devDependencies": {
     "@eslint/js": "^9.5.0",

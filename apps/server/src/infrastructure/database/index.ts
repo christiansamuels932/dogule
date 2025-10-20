@@ -1,6 +1,13 @@
-import { createDatabaseClient } from './client';
+import { createDatabaseClient, DatabaseClient } from './client';
 import { loadConfig } from '../config';
 
-const { databaseUrl } = loadConfig();
+let client: DatabaseClient | undefined;
 
-export const databaseClient = createDatabaseClient(databaseUrl);
+export const getDatabaseClient = (): DatabaseClient => {
+  if (!client) {
+    const { databaseUrl } = loadConfig();
+    client = createDatabaseClient(databaseUrl);
+  }
+
+  return client;
+};
