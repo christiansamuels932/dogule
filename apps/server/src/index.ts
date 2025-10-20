@@ -1,5 +1,8 @@
+import { config as loadEnv } from 'dotenv';
 import express from 'express';
 import { ApolloServer } from 'apollo-server-express';
+
+loadEnv();
 
 import {
   authMiddleware,
