@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "moduleResolution": "Bundler"
+  },
+  "include": [
+    "src",
+    "vitest.config.ts",
+    "vitest.setup.ts"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules"
+  ]
+}
