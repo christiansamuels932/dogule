@@ -1,11 +1,35 @@
+import { config as loadEnv } from 'dotenv';
+
 export interface AppConfig {
   port: number;
   nodeEnv: string;
-  databaseUrl?: string;
+  databaseUrl: string;
 }
 
-export const loadConfig = (): AppConfig => ({
-  port: Number(process.env.PORT ?? 4000),
-  nodeEnv: process.env.NODE_ENV ?? 'development',
-  databaseUrl: process.env.DATABASE_URL,
-});
+let envLoaded = false;
+
+const ensureEnv = () => {
+  if (!envLoaded) {
+    loadEnv();
+    envLoaded = true;
+  }
+};
+
+export const loadConfig = (): AppConfig => {
+  ensureEnv();
+
+  const port = Number(process.env.PORT ?? 4000);
+  const nodeEnv = process.env.NODE_ENV ?? 'development';
+  const databaseUrl = process.env.DATABASE_URL;
+
+  if (!databaseUrl) {
+    console.error('ERR_DB_ENV_001 Missing DATABASE_URL environment variable');
+    process.exit(1);
+  }
+
+  return {
+    port,
+    nodeEnv,
+    databaseUrl,
+  };
+};

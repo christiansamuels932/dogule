@@ -1,3 +1,5 @@
+import { Pool, QueryResult } from 'pg';
+
 export interface QueryOptions {
   text: string;
   params?: ReadonlyArray<unknown>;
@@ -30,17 +32,27 @@ export class DatabaseClient {
   }
 
   async disconnect(): Promise<void> {
+    if (!this.pool) {
+      return;
+    }
+
+    await this.pool.end();
+    this.pool = undefined;
+
     if (process.env.NODE_ENV !== 'test') {
       console.info('[database] disconnect');
     }
   }
 
-  async query<T>(_options: QueryOptions): Promise<T[]> {
+  async query<T>({ text, params = [] }: QueryOptions): Promise<T[]> {
+    const pool = await this.ensurePool();
+
     if (process.env.NODE_ENV !== 'test') {
-      console.debug('[database] query executed');
+      console.debug('[database] query executed', text);
     }
 
-    return [];
+    const result: QueryResult<T> = await pool.query(text, params);
+    return result.rows;
   }
 }
 

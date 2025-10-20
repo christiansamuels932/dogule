@@ -1,0 +1,17 @@
+{
+  "name": "Dogule Remote Dev",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "server",
+  "workspaceFolder": "/workspace",
+  "runServices": ["server", "web", "postgres"],
+  "forwardPorts": [3000, 4000, 5432],
+  "postCreateCommand": "npm install --no-fund --no-audit",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  }
+}

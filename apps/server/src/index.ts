@@ -6,8 +6,8 @@ loadEnv();
 
 import {
   authMiddleware,
-  databaseClient,
   errorHandler,
+  getDatabaseClient,
   loadConfig,
   requestLogger,
 } from './infrastructure';
@@ -22,6 +22,7 @@ import { resolvers, typeDefs } from './graphql/schema';
 const createServer = async () => {
   const app = express();
   const config = loadConfig();
+  const databaseClient = getDatabaseClient();
 
   app.use(express.json());
   app.use(requestLogger);
@@ -33,6 +34,10 @@ const createServer = async () => {
   app.use('/api/finanzen', finanzenRouter);
   app.use('/api/kalender', kalenderRouter);
   app.use('/api/kommunikation', kommunikationRouter);
+
+  app.get('/healthz', (_req, res) => {
+    res.json({ status: 'ok' });
+  });
 
   const apollo = new ApolloServer({ typeDefs, resolvers });
   await apollo.start();
@@ -48,7 +53,11 @@ const createServer = async () => {
   });
 };
 
-createServer().catch((error) => {
-  console.error('Failed to start server', error);
-  process.exit(1);
-});
+export { createServer };
+
+if (process.env.NODE_ENV !== 'test') {
+  createServer().catch((error) => {
+    console.error('Failed to start server', error);
+    process.exit(1);
+  });
+}
