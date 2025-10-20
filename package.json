@@ -8,10 +8,13 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "docker compose up --build || echo ERR_DEV_UP_001",
-    "down": "docker compose down || echo ERR_DEV_DOWN_001",
-    "logs": "docker compose logs -f || echo ERR_DEV_LOGS_001",
-    "test": "docker compose run --rm server npm run test || echo ERR_TEST_001"
+    "dev:web": "npm run dev -w apps/web || echo ERR_WEB_DEV_001",
+    "dev:server": "npm run dev -w apps/server || echo ERR_SRV_DEV_001",
+    "dev": "npm-run-all --parallel dev:*",
+    "build": "npm run build -w apps/web && npm run build -w apps/server || echo ERR_BUILD_001",
+    "test": "npm run test -ws || echo ERR_TEST_001",
+    "lint": "eslint \"{apps,packages}/**/*.{ts,tsx,js,jsx}\"",
+    "format": "prettier --write ."
   },
   "devDependencies": {
     "@eslint/js": "^9.5.0",
@@ -30,6 +33,7 @@
     "typescript-eslint": "^7.13.0",
     "vitest": "^1.5.0",
     "@testing-library/jest-dom": "^6.4.0",
-    "@vitest/coverage-v8": "^1.5.0"
+    "@vitest/coverage-v8": "^1.5.0",
+    "npm-run-all": "^4.1.5"
   }
 }

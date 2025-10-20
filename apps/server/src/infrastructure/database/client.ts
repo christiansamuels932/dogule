@@ -5,42 +5,29 @@ export interface QueryOptions {
   params?: ReadonlyArray<unknown>;
 }
 
-export class DatabaseClient {
-  private pool?: Pool;
-
-  constructor(private readonly url: string) {}
-
-  private async ensurePool(): Promise<Pool> {
-    if (!this.pool) {
-      await this.connect();
-    }
-
-    if (!this.pool) {
-      throw new Error('Database pool is not initialized');
-    }
-
-    return this.pool;
+const resolveDatabaseUrl = (url?: string): string => {
+  if (url && url.trim().length > 0) {
+    return url;
   }
 
+  const envUrl = process.env.DATABASE_URL?.trim();
+
+  if (envUrl && envUrl.length > 0) {
+    return envUrl;
+  }
+
+  console.error('ERR_DB_ENV_001: DATABASE_URL environment variable is not defined.');
+  process.exit(1);
+
+  throw new Error('ERR_DB_ENV_001');
+};
+
+export class DatabaseClient {
+  constructor(private readonly url: string) {}
+
   async connect(): Promise<void> {
-    if (this.pool) {
-      return;
-    }
-
-    this.pool = new Pool({ connectionString: this.url });
-
-    if (process.env.NODE_ENV === 'test') {
-      return;
-    }
-
-    try {
-      const client = await this.pool.connect();
-      client.release();
-
+    if (process.env.NODE_ENV !== 'test') {
       console.info('[database] connect', this.url);
-    } catch (error) {
-      console.error('ERR_DB_CONNECT_001 Failed to connect to database', error);
-      throw error;
     }
   }
 
@@ -69,4 +56,5 @@ export class DatabaseClient {
   }
 }
 
-export const createDatabaseClient = (url: string): DatabaseClient => new DatabaseClient(url);
+export const createDatabaseClient = (url?: string): DatabaseClient =>
+  new DatabaseClient(resolveDatabaseUrl(url));
