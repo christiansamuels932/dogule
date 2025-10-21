@@ -1,5 +1,7 @@
 import { config as loadEnv } from 'dotenv';
 
+import { logError } from '@dogule/utils';
+
 export interface AppConfig {
   port: number;
   nodeEnv: string;
@@ -25,12 +27,12 @@ export const loadConfig = (): AppConfig => {
   const jwtSecret = process.env.JWT_SECRET;
 
   if (!databaseUrl) {
-    console.error('ERR_DB_ENV_001 Missing DATABASE_URL environment variable');
+    logError('ERR_DB_ENV_001 Missing DATABASE_URL environment variable');
     process.exit(1);
   }
 
   if (!jwtSecret) {
-    console.error('ERR_AUTH_ENV_001 Missing JWT_SECRET environment variable');
+    logError('ERR_AUTH_ENV_001 Missing JWT_SECRET environment variable');
     process.exit(1);
   }
 

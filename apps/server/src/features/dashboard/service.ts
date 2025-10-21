@@ -45,7 +45,7 @@ export class DashboardService {
         const rows = await this.database.query<{ count: number }>({ text: query });
         summary[key] = rows[0]?.count ?? 0;
       } catch (error) {
-        console.error('ERR_DASHBOARD_001', error);
+        logError('ERR_DASHBOARD_001', error);
         summary[key] = 0;
       }
     }
