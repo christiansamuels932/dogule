@@ -1,6 +1,8 @@
 import { RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 
+import { logWarn } from '@dogule/utils';
+
 import { loadConfig } from '../config';
 
 export interface AuthenticatedRequest {
@@ -46,7 +48,7 @@ export const authMiddleware: RequestHandler = (req, res, next) => {
     return next();
   } catch (error) {
     if (process.env.NODE_ENV !== 'test') {
-      console.warn('[auth] invalid token', error);
+      logWarn('[auth] invalid token', error);
     }
     return res.status(401).json({ message: 'ERR_AUTH_401' });
   }

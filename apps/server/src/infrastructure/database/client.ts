@@ -1,6 +1,8 @@
 import { Pool, QueryResult } from 'pg';
 import { IMemoryDb, newDb } from 'pg-mem';
 
+import { logError, logInfo, logWarn } from '@dogule/utils';
+
 export interface QueryOptions {
   text: string;
   params?: ReadonlyArray<unknown>;
@@ -31,47 +33,47 @@ export class DatabaseClient {
 
     if (this.mode === 'postgres') {
       if (!this.url) {
-        console.error('ERR_DB_CONFIG_001 mode=postgres requires url');
+        logError('ERR_DB_CONFIG_001 mode=postgres requires url');
         throw new Error('ERR_DB_CONFIG_001');
       }
 
       try {
         this.pool = new Pool({ connectionString: this.url });
       } catch (error) {
-        console.error('ERR_DB_CONNECT_001', error);
+        logError('ERR_DB_CONNECT_001', error);
         throw new Error('ERR_DB_CONNECT_001');
       }
 
       try {
         await this.pool.query('SELECT 1');
       } catch (error) {
-        console.error('ERR_DB_LIVENESS_001', error);
+        logError('ERR_DB_LIVENESS_001', error);
         await this.pool.end().catch(() => undefined);
         this.pool = undefined;
         throw new Error('ERR_DB_LIVENESS_001');
       }
 
-      console.info('LOG_DB_READY_001', this.url);
+      logInfo('LOG_DB_READY_001', this.url);
     } else {
       try {
         this.memoryDb = newDb();
         const { Pool: MemoryPool } = this.memoryDb.adapters.createPg();
         this.pool = new MemoryPool() as unknown as Pool;
       } catch (error) {
-        console.error('ERR_DB_CONNECT_001', error);
+        logError('ERR_DB_CONNECT_001', error);
         throw new Error('ERR_DB_CONNECT_001');
       }
 
       try {
         await this.pool.query('SELECT 1');
       } catch (error) {
-        console.error('ERR_DB_LIVENESS_001', error);
+        logError('ERR_DB_LIVENESS_001', error);
         this.pool = undefined;
         this.memoryDb = undefined;
         throw new Error('ERR_DB_LIVENESS_001');
       }
 
-      console.info('LOG_DB_READY_002');
+      logInfo('LOG_DB_READY_002');
     }
 
     await this.bootstrapSchema(this.pool);
@@ -135,9 +137,9 @@ export class DatabaseClient {
         );
       `);
       this.bootstrapped = true;
-      console.info('LOG_DB_BOOTSTRAP_001');
+      logInfo('LOG_DB_BOOTSTRAP_001');
     } catch (error) {
-      console.error('ERR_DB_BOOTSTRAP_001', error);
+      logError('ERR_DB_BOOTSTRAP_001', error);
       throw new Error('ERR_DB_BOOTSTRAP_001');
     }
   }
@@ -151,7 +153,7 @@ export const createDatabaseClient = (url?: string): DatabaseClient => {
   }
 
   if (process.env.NODE_ENV !== 'test') {
-    console.warn('WARN_DB_FALLBACK_001 using pg-mem');
+    logWarn('WARN_DB_FALLBACK_001 using pg-mem');
   }
 
   return new DatabaseClient({ mode: 'memory' });

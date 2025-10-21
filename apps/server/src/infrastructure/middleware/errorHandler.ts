@@ -1,5 +1,7 @@
 import { ErrorRequestHandler } from 'express';
 
+import { logError } from '@dogule/utils';
+
 interface HttpError extends Error {
   status?: number;
   details?: unknown;
@@ -13,7 +15,7 @@ export const errorHandler: ErrorRequestHandler = (err: HttpError, _req, res, _ne
   };
 
   if (status >= 500) {
-    console.error('[server] unexpected error', err);
+    logError('[server] unexpected error', err);
   }
 
   res.status(status).json(payload);
