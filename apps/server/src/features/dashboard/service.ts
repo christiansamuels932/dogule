@@ -2,10 +2,10 @@ import type { DashboardSummary } from '../../../../../packages/domain';
 import { getDatabaseClient } from '../../infrastructure';
 import type { DatabaseClient } from '../../infrastructure';
 import { KundenRepository } from '../kunden/repository';
+import { KurseRepository } from '../kurse/repository';
 
-const SUMMARY_QUERIES: Record<Exclude<keyof DashboardSummary, 'kundenCount'>, string> = {
+const SUMMARY_QUERIES: Record<Exclude<keyof DashboardSummary, 'kundenCount' | 'kurseCount'>, string> = {
   hundeCount: 'SELECT COUNT(*)::int AS count FROM hunde',
-  kurseCount: 'SELECT COUNT(*)::int AS count FROM kurse',
   finanzenCount: 'SELECT COUNT(*)::int AS count FROM finanzen',
   kalenderCount: 'SELECT COUNT(*)::int AS count FROM kalender',
   kommunikationCount: 'SELECT COUNT(*)::int AS count FROM kommunikation',
@@ -26,6 +26,7 @@ export class DashboardService {
   constructor(
     private readonly database: Database = getDatabaseClient(),
     private readonly kundenRepository = new KundenRepository(),
+    private readonly kurseRepository = new KurseRepository(),
   ) {}
 
   async getSummary(): Promise<DashboardSummary> {
@@ -38,8 +39,15 @@ export class DashboardService {
       summary.kundenCount = 0;
     }
 
+    try {
+      summary.kurseCount = await this.kurseRepository.count();
+    } catch (error) {
+      console.error('ERR_DASHBOARD_001', error);
+      summary.kurseCount = 0;
+    }
+
     for (const [key, query] of Object.entries(SUMMARY_QUERIES) as Array<
-      [Exclude<keyof DashboardSummary, 'kundenCount'>, string]
+      [Exclude<keyof DashboardSummary, 'kundenCount' | 'kurseCount'>, string]
     >) {
       try {
         const rows = await this.database.query<{ count: number }>({ text: query });

@@ -2,7 +2,6 @@ import { gql } from 'apollo-server-express';
 import {
   CustomerCreateInput,
   DogCreateInput,
-  CourseCreateInput,
   FinancialRecordCreateInput,
   CalendarEventCreateInput,
   MessageCreateInput,
@@ -10,6 +9,7 @@ import {
 import { KundenService } from '../features/kunden/service';
 import { HundeService } from '../features/hunde/service';
 import { KurseService } from '../features/kurse/service';
+import { kursCreateSchema } from '../features/kurse/schemas';
 import { FinanzenService } from '../features/finanzen/service';
 import { KalenderService } from '../features/kalender/service';
 import { KommunikationService } from '../features/kommunikation/service';
@@ -58,17 +58,27 @@ export const typeDefs = gql`
 
   type Kurs {
     id: ID!
-    title: String!
-    description: String
-    scheduleId: String
-    createdAt: String!
-    updatedAt: String!
+    titel: String!
+    beschreibung: String
+    start_datum: String!
+    end_datum: String
+    ort: String
+    preis_cents: Int!
+    max_teilnehmer: Int!
+    status: String!
+    created_at: String!
+    updated_at: String!
   }
 
   input KursInput {
-    title: String!
-    description: String
-    scheduleId: String
+    titel: String!
+    beschreibung: String
+    start_datum: String!
+    end_datum: String
+    ort: String
+    preis_cents: Int
+    max_teilnehmer: Int
+    status: String
   }
 
   type FinanzEintrag {
@@ -150,7 +160,7 @@ export const resolvers = {
   Query: {
     kunden: () => kundenService.list().then((result) => result.data),
     hunde: () => hundeService.list().then((result) => result.data),
-    kurse: () => kurseService.list().then((result) => result.data),
+    kurse: () => kurseService.list({ limit: 50, offset: 0 }).then((result) => result.data),
     finanzen: () => finanzenService.list().then((result) => result.data),
     kalender: () => kalenderService.list().then((result) => result.data),
     nachrichten: () => kommunikationService.list().then((result) => result.data),
@@ -158,7 +168,8 @@ export const resolvers = {
   Mutation: {
     createKunde: (_: unknown, { input }: { input: CustomerCreateInput }) => kundenService.create(input),
     createHund: (_: unknown, { input }: { input: DogCreateInput }) => hundeService.create(input),
-    createKurs: (_: unknown, { input }: { input: CourseCreateInput }) => kurseService.create(input),
+    createKurs: (_: unknown, { input }: { input: unknown }) =>
+      kurseService.create(kursCreateSchema.parse(input)),
     createFinanzEintrag: (_: unknown, { input }: { input: FinancialRecordCreateInput }) =>
       finanzenService.create(input),
     createKalenderEvent: (_: unknown, { input }: { input: CalendarEventCreateInput }) =>

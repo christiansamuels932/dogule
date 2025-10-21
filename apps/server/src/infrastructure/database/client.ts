@@ -143,9 +143,21 @@ export class DatabaseClient {
           owner_id UUID,
           CONSTRAINT fk_hunde_owner FOREIGN KEY (owner_id) REFERENCES kunden (id) ON DELETE SET NULL
         );
+        DROP TABLE IF EXISTS kurse;
         CREATE TABLE IF NOT EXISTS kurse (
-          id TEXT PRIMARY KEY
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          titel TEXT NOT NULL,
+          beschreibung TEXT,
+          start_datum DATE NOT NULL,
+          end_datum DATE,
+          ort TEXT,
+          preis_cents INTEGER DEFAULT 0 CHECK (preis_cents >= 0),
+          max_teilnehmer INTEGER DEFAULT 0 CHECK (max_teilnehmer >= 0),
+          status TEXT NOT NULL DEFAULT 'geplant'
         );
+        CREATE INDEX IF NOT EXISTS idx_kurse_start ON kurse(start_datum);
         CREATE TABLE IF NOT EXISTS finanzen (
           id TEXT PRIMARY KEY
         );
