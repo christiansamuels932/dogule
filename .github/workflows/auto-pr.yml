@@ -1,0 +1,28 @@
+name: Auto PR for Codex branches
+
+on:
+  push:
+    branches:
+      - "codex/**"
+
+jobs:
+  auto-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create or update pull request
+        id: auto_pr
+        uses: peter-evans/create-pull-request@v6
+        continue-on-error: true
+        with:
+          title: "codex: ${{ github.ref_name }}"
+          body: Auto PR from Codex
+          base: main
+          branch: ${{ github.ref_name }}
+          labels: codex-automerge
+
+      - name: Log failure
+        if: steps.auto_pr.outcome == 'failure'
+        run: echo "ERR_AUTOPR_001"
