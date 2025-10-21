@@ -14,10 +14,10 @@ export default defineConfig({
     }
   },
   test: {
+    include: ['src/**/*.test.ts'],
     environment: 'node',
-    globals: true,
     coverage: {
-      reporter: ['text', 'html'],
+      reporter: ['text', 'lcov'],
       provider: 'v8'
     }
   }

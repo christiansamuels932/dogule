@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts || echo ERR_SRV_START_001",
-    "start": "node dist/index.js || echo ERR_SRV_START_002",
-    "build": "tsc -p tsconfig.json || echo ERR_SRV_BUILD_001",
-    "test": "vitest run || echo ERR_SRV_TEST_001"
+    "test": "vitest run --reporter=dot",
+    "test:watch": "vitest",
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts"
   },
   "dependencies": {
     "apollo-server-express": "^3.13.0",
@@ -24,7 +24,10 @@
     "@types/bcrypt": "^5.0.2",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/supertest": "^2.0.16",
+    "@vitest/coverage-v8": "^2.0.0",
     "supertest": "^6.3.4",
-    "ts-node-dev": "^2.0.0"
+    "tsx": "^4.7.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.0.0"
   }
 }
