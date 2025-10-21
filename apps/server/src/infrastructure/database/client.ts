@@ -59,6 +59,10 @@ export class DatabaseClient {
     if (process.env.NODE_ENV !== 'test') {
       console.info('[database] connect', this.label);
     }
+
+    if (this.pool) {
+      await this.initializeSchema(this.pool);
+    }
   }
 
   async disconnect(): Promise<void> {
@@ -83,6 +87,37 @@ export class DatabaseClient {
 
     const result: QueryResult<T> = await pool.query(text, params);
     return result.rows;
+  }
+
+  private async ensurePool(): Promise<Pool> {
+    if (this.pool) {
+      return this.pool;
+    }
+
+    if (process.env.NODE_ENV === 'test' || this.url.startsWith('pg-mem://')) {
+      if (!this.memoryDb) {
+        this.memoryDb = newDb({ autoCreateForeignKeyIndices: true });
+      }
+
+      const adapter = this.memoryDb.adapters.createPg();
+      this.pool = new adapter.Pool();
+      await this.initializeSchema(this.pool);
+      return this.pool;
+    }
+
+    this.pool = new Pool({ connectionString: this.url });
+    return this.pool;
+  }
+
+  private async initializeSchema(pool: Pool): Promise<void> {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        hashed_password TEXT NOT NULL,
+        role TEXT NOT NULL
+      );
+    `);
   }
 }
 
