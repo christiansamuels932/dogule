@@ -2,6 +2,8 @@ import { config as loadEnv } from 'dotenv';
 import express from 'express';
 import { ApolloServer } from 'apollo-server-express';
 
+import { logError, logInfo } from '@dogule/utils';
+
 loadEnv();
 
 import {
@@ -58,8 +60,8 @@ const createServer = async () => {
   const { app, config } = await createApp();
 
   app.listen(config.port, () => {
-    console.log(`Server is running on port ${config.port}`);
-    console.log(`GraphQL endpoint available at /graphql`);
+    logInfo(`Server is running on port ${config.port}`);
+    logInfo(`GraphQL endpoint available at /graphql`);
   });
 };
 
@@ -67,7 +69,7 @@ export { createServer, createApp };
 
 if (process.env.NODE_ENV !== 'test') {
   createServer().catch((error) => {
-    console.error('Failed to start server', error);
+    logError('Failed to start server', error);
     process.exit(1);
   });
 }

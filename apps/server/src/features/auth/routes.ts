@@ -1,6 +1,8 @@
 import { Router, Response } from 'express';
 import { ZodError } from 'zod';
 
+import { logError } from '@dogule/utils';
+
 import { loginSchema, registerSchema } from './schemas';
 import { AuthService } from './service';
 import { authMiddleware, AuthenticatedRequest } from '../../infrastructure';
@@ -69,7 +71,7 @@ router.get('/me', authMiddleware, (req, res) => {
     });
   } catch (error) {
     if (process.env.NODE_ENV !== 'test') {
-      console.error('[auth] failed to load profile', error);
+      logError('[auth] failed to load profile', error);
     }
     res.status(500).json({ message: 'ERR_AUTH_ME_001' });
   }

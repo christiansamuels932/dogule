@@ -1,17 +1,21 @@
 import request from 'supertest';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import jwt from 'jsonwebtoken';
 
-import { createApp } from '../../index';
-import { getDatabaseClient } from '../../infrastructure';
+let createApp: typeof import('../../index')['createApp'];
+let getDatabaseClient: typeof import('../../infrastructure')['getDatabaseClient'];
 
 const TEST_EMAIL = 'jane.doe@example.com';
 const TEST_PASSWORD = 'password123';
 
 describe('auth routes', () => {
-  beforeAll(() => {
+  beforeAll(async () => {
     process.env.NODE_ENV = 'test';
     process.env.DATABASE_URL = 'pg-mem://auth-tests';
     process.env.JWT_SECRET = 'super-secret';
+
+    ({ createApp } = await import('../../index'));
+    ({ getDatabaseClient } = await import('../../infrastructure'));
   });
 
   afterEach(async () => {
@@ -81,5 +85,84 @@ describe('auth routes', () => {
 
     expect(response.status).toBe(401);
     expect(response.body).toEqual({ message: 'ERR_AUTH_401' });
+  });
+
+  it('rejects invalid JWTs with ERR_AUTH_INVALID_001', async () => {
+    const { app } = await createApp();
+    const agent = request(app);
+
+    const registerResponse = await agent.post('/auth/register').send({
+      email: TEST_EMAIL,
+      password: TEST_PASSWORD,
+    });
+
+    expect(registerResponse.status).toBe(201);
+
+    const loginResponse = await agent.post('/auth/login').send({
+      email: TEST_EMAIL,
+      password: TEST_PASSWORD,
+    });
+
+    expect(loginResponse.status).toBe(200);
+
+    const invalidToken = `${loginResponse.body.token}invalid`;
+
+    const response = await agent
+      .get('/api/kunden')
+      .set('Authorization', `Bearer ${invalidToken}`);
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({ message: 'ERR_AUTH_INVALID_001' });
+  });
+
+  it('rejects expired JWTs with ERR_AUTH_EXPIRED_001', async () => {
+    const { app } = await createApp();
+    const agent = request(app);
+
+    const registerResponse = await agent.post('/auth/register').send({
+      email: TEST_EMAIL,
+      password: TEST_PASSWORD,
+    });
+
+    expect(registerResponse.status).toBe(201);
+
+    const expiredToken = jwt.sign(
+      {
+        sub: registerResponse.body.user.id,
+        email: TEST_EMAIL,
+        role: 'user',
+      },
+      process.env.JWT_SECRET ?? 'super-secret',
+      { expiresIn: '1s' },
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+
+    const response = await agent
+      .get('/api/kunden')
+      .set('Authorization', `Bearer ${expiredToken}`);
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({ message: 'ERR_AUTH_EXPIRED_001' });
+  });
+
+  it('rejects wrong passwords with ERR_AUTH_LOGIN_001', async () => {
+    const { app } = await createApp();
+    const agent = request(app);
+
+    const registerResponse = await agent.post('/auth/register').send({
+      email: TEST_EMAIL,
+      password: TEST_PASSWORD,
+    });
+
+    expect(registerResponse.status).toBe(201);
+
+    const response = await agent.post('/auth/login').send({
+      email: TEST_EMAIL,
+      password: 'incorrect-password',
+    });
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({ message: 'ERR_AUTH_LOGIN_001' });
   });
 });

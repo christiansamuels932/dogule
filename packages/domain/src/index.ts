@@ -17,19 +17,21 @@ export interface CustomerCreateInput {
 
 export interface Dog {
   id: string;
+  kundeId: string;
   name: string;
-  breed: string;
-  ownerId: string;
-  dateOfBirth?: string;
+  geburtsdatum?: string;
+  rasse?: string;
+  notizen?: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface DogCreateInput {
+  kundeId: string;
   name: string;
-  breed: string;
-  ownerId: string;
-  dateOfBirth?: string;
+  geburtsdatum?: string;
+  rasse?: string;
+  notizen?: string;
 }
 
 export interface Course {
