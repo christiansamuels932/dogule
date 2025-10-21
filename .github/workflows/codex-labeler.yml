@@ -1,0 +1,56 @@
+name: Codex Labeler
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  apply-label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply codex auto-merge label
+        uses: actions/labeler@v5
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          configuration-path: .github/labeler.yml
+          sync-labels: false
+
+      - name: Verify codex auto-merge label present when required
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const core = require('@actions/core');
+            const pr = context.payload.pull_request;
+            const { owner, repo } = context.repo;
+
+            if (!pr) {
+              core.info('No pull request payload detected.');
+              return;
+            }
+
+            const isCodexBranch = /^codex\//.test(pr.head.ref);
+            if (!isCodexBranch) {
+              core.info('PR head branch does not require codex auto-merge label.');
+              return;
+            }
+
+            const labelsResponse = await github.rest.issues.listLabelsOnIssue({
+              owner,
+              repo,
+              issue_number: pr.number,
+            });
+
+            const hasLabel = labelsResponse.data.some(label => label.name === 'codex-automerge');
+            if (!hasLabel) {
+              core.error('ERR_LABEL_001 codex-automerge label missing for codex/* branch.');
+            } else {
+              core.info('codex-automerge label is present.');
+            }
