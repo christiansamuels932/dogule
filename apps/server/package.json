@@ -12,6 +12,8 @@
   "dependencies": {
     "apollo-server-express": "^3.13.0",
     "dotenv": "^16.4.5",
+    "pg": "^8.11.5",
+    "pg-mem": "^3.0.5",
     "express": "^4.19.2",
     "graphql": "^16.8.1",
     "zod": "^3.23.0"

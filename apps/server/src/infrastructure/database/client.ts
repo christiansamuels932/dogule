@@ -1,33 +1,63 @@
 import { Pool, QueryResult } from 'pg';
+import { newDb } from 'pg-mem';
 
 export interface QueryOptions {
   text: string;
   params?: ReadonlyArray<unknown>;
 }
 
-const resolveDatabaseUrl = (url?: string): string => {
-  if (url && url.trim().length > 0) {
-    return url;
+interface DatabaseConfig {
+  createPool: () => Pool;
+  label: string;
+}
+
+const resolveDatabaseConfig = (url?: string): DatabaseConfig => {
+  const candidateUrl = url?.trim() || process.env.DATABASE_URL?.trim();
+
+  if (candidateUrl) {
+    return {
+      createPool: () => new Pool({ connectionString: candidateUrl }),
+      label: candidateUrl,
+    };
   }
 
-  const envUrl = process.env.DATABASE_URL?.trim();
+  console.warn('WARN_DB_FALLBACK_001 using pg-mem');
+  const db = newDb();
+  const { Pool: MemoryPool } = db.adapters.createPg();
 
-  if (envUrl && envUrl.length > 0) {
-    return envUrl;
-  }
-
-  console.error('ERR_DB_ENV_001: DATABASE_URL environment variable is not defined.');
-  process.exit(1);
-
-  throw new Error('ERR_DB_ENV_001');
+  return {
+    createPool: () => new MemoryPool() as unknown as Pool,
+    label: 'pg-mem',
+  };
 };
 
 export class DatabaseClient {
-  constructor(private readonly url: string) {}
+  private pool?: Pool;
+
+  constructor(
+    private readonly createPool: () => Pool,
+    private readonly label: string,
+  ) {}
+
+  private async ensurePool(): Promise<Pool> {
+    if (!this.pool) {
+      try {
+        this.pool = this.createPool();
+        await this.pool.query('SELECT 1');
+      } catch (error) {
+        console.error('ERR_DB_CONNECT_001', error);
+        process.exit(1);
+      }
+    }
+
+    return this.pool;
+  }
 
   async connect(): Promise<void> {
+    await this.ensurePool();
+
     if (process.env.NODE_ENV !== 'test') {
-      console.info('[database] connect', this.url);
+      console.info('[database] connect', this.label);
     }
   }
 
@@ -56,5 +86,7 @@ export class DatabaseClient {
   }
 }
 
-export const createDatabaseClient = (url?: string): DatabaseClient =>
-  new DatabaseClient(resolveDatabaseUrl(url));
+export const createDatabaseClient = (url?: string): DatabaseClient => {
+  const config = resolveDatabaseConfig(url);
+  return new DatabaseClient(config.createPool, config.label);
+};
