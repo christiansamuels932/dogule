@@ -8,9 +8,10 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:web": "npm run dev -w apps/web || echo ERR_WEB_DEV_001",
     "dev:server": "npm run dev -w apps/server || echo ERR_SRV_DEV_001",
-    "dev": "npm-run-all --parallel dev:*",
+    "dev:web": "npm run dev -w apps/web || echo ERR_WEB_DEV_001",
+    "dev:remote": "concurrently -k \"npm:dev:server\" \"npm:dev:web\" || echo ERR_REMOTE_DEV_001",
+    "dev": "npm run dev:remote",
     "build": "npm run build -w apps/web && npm run build -w apps/server || echo ERR_BUILD_001",
     "test": "npm run test -ws || echo ERR_TEST_001",
     "lint": "eslint \"{apps,packages}/**/*.{ts,tsx,js,jsx}\"",
@@ -34,6 +35,7 @@
     "vitest": "^1.5.0",
     "@testing-library/jest-dom": "^6.4.0",
     "@vitest/coverage-v8": "^1.5.0",
+    "concurrently": "^8.2.2",
     "npm-run-all": "^4.1.5"
   }
 }
