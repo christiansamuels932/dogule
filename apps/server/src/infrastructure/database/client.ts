@@ -146,8 +146,12 @@ export class DatabaseClient {
 export const createDatabaseClient = (url?: string): DatabaseClient => {
   const candidateUrl = url?.trim() || process.env.DATABASE_URL?.trim();
 
-  if (candidateUrl) {
+  if (candidateUrl && !candidateUrl.startsWith('pg-mem://')) {
     return new DatabaseClient({ mode: 'postgres', url: candidateUrl });
+  }
+
+  if (candidateUrl && candidateUrl.startsWith('pg-mem://')) {
+    return new DatabaseClient({ mode: 'memory' });
   }
 
   if (process.env.NODE_ENV !== 'test') {
