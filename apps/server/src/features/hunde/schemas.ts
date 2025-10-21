@@ -1,64 +1,64 @@
+import { z } from 'zod';
 import { DogCreateInput } from '../../../../../packages/domain';
 
-const isString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
+const isoDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format, expected YYYY-MM-DD');
 
-export const parseDogCreateInput = (payload: unknown): DogCreateInput => {
-  if (typeof payload !== 'object' || payload === null) {
-    throw new Error('Invalid dog payload');
-  }
+const hundeCreateSchema = z.object({
+  kunde_id: z.string().uuid(),
+  name: z.string().trim().min(1, 'Name is required'),
+  geburtsdatum: isoDateSchema.optional(),
+  rasse: z.union([z.string().trim().min(1), z.null()]).optional(),
+  notizen: z.union([z.string(), z.null()]).optional(),
+});
 
-  const { name, breed, ownerId, dateOfBirth } = payload as Record<string, unknown>;
+const hundeUpdateSchema = z
+  .object({
+    kunde_id: z.string().uuid().optional(),
+    name: z.string().trim().min(1).optional(),
+    geburtsdatum: z.union([isoDateSchema, z.null()]).optional(),
+    rasse: z.union([z.string().trim().min(1), z.null()]).optional(),
+    notizen: z.union([z.string(), z.null()]).optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, {
+    message: 'At least one field must be provided',
+  });
 
-  if (!isString(name) || !isString(breed) || !isString(ownerId)) {
-    throw new Error('Dog name, breed and ownerId are required');
-  }
-
-  if (dateOfBirth !== undefined && !isString(dateOfBirth)) {
-    throw new Error('Dog dateOfBirth must be a string');
-  }
+export const parseHundeCreateInput = (payload: unknown): DogCreateInput => {
+  const parsed = hundeCreateSchema.parse(payload);
 
   return {
-    name,
-    breed,
-    ownerId,
-    dateOfBirth,
+    kundeId: parsed.kunde_id,
+    name: parsed.name,
+    geburtsdatum: parsed.geburtsdatum,
+    rasse: parsed.rasse ?? undefined,
+    notizen: parsed.notizen ?? undefined,
   };
 };
 
-export const parseDogUpdateInput = (payload: unknown): Partial<DogCreateInput> => {
-  if (typeof payload !== 'object' || payload === null) {
-    throw new Error('Invalid dog payload');
-  }
-
-  const { name, breed, ownerId, dateOfBirth } = payload as Record<string, unknown>;
+export const parseHundeUpdateInput = (payload: unknown): Partial<DogCreateInput> => {
+  const parsed = hundeUpdateSchema.parse(payload);
   const result: Partial<DogCreateInput> = {};
 
-  if (name !== undefined) {
-    if (!isString(name)) {
-      throw new Error('Dog name must be a string');
-    }
-    result.name = name;
+  if (parsed.kunde_id !== undefined) {
+    result.kundeId = parsed.kunde_id;
   }
 
-  if (breed !== undefined) {
-    if (!isString(breed)) {
-      throw new Error('Dog breed must be a string');
-    }
-    result.breed = breed;
+  if (parsed.name !== undefined) {
+    result.name = parsed.name;
   }
 
-  if (ownerId !== undefined) {
-    if (!isString(ownerId)) {
-      throw new Error('Dog ownerId must be a string');
-    }
-    result.ownerId = ownerId;
+  if (parsed.geburtsdatum !== undefined) {
+    result.geburtsdatum = parsed.geburtsdatum ?? undefined;
   }
 
-  if (dateOfBirth !== undefined) {
-    if (!isString(dateOfBirth)) {
-      throw new Error('Dog dateOfBirth must be a string');
-    }
-    result.dateOfBirth = dateOfBirth;
+  if (parsed.rasse !== undefined) {
+    result.rasse = parsed.rasse ?? undefined;
+  }
+
+  if (parsed.notizen !== undefined) {
+    result.notizen = parsed.notizen ?? undefined;
   }
 
   return result;
