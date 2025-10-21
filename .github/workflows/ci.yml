@@ -16,19 +16,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: |
-          if ! npm ci; then
-            echo "::error ::ERR_CI_000 Failed to install dependencies"
-            exit 1
-          fi
+        run: npm ci
 
-      - name: Run test suite
-        run: |
-          if ! npm run build -ws; then
-            echo "::error ::ERR_CI_001 Workspace build failed"
-            exit 1
-          fi
-          if ! npm test -ws; then
-            echo "::error ::ERR_CI_002 Test suite failed"
-            exit 1
-          fi
+      - name: Build workspace
+        run: npm run build -ws
+
+      - name: Test workspace
+        run: npm test -ws
