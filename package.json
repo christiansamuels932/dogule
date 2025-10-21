@@ -14,7 +14,7 @@
     "dev": "npm run dev:remote",
     "build": "npm run build -w apps/web && npm run build -w apps/server || echo ERR_BUILD_001",
     "test": "npm run test -ws || echo ERR_TEST_001",
-    "lint": "eslint \"{apps,packages}/**/*.{ts,tsx,js,jsx}\"",
+    "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write ."
   },
   "devDependencies": {
