@@ -1,5 +1,7 @@
 import { createConsoleSpy } from '@dogule/testing';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+
+import type { DashboardSummary } from '../../../packages/domain';
 
 const TOKEN_STORAGE_KEY = 'dogule_token';
 
@@ -7,8 +9,35 @@ interface UserProfile {
   sub: string;
   email: string;
   role: string;
+  name?: string;
   [key: string]: unknown;
 }
+
+interface DashboardLink {
+  href: string;
+  label: string;
+  summaryKey: keyof DashboardSummary;
+}
+
+const DASHBOARD_LINKS: DashboardLink[] = [
+  { href: '/kunden', label: 'Kunden', summaryKey: 'kundenCount' },
+  { href: '/hunde', label: 'Hunde', summaryKey: 'hundeCount' },
+  { href: '/kurse', label: 'Kurse', summaryKey: 'kurseCount' },
+  { href: '/finanzen', label: 'Finanzen', summaryKey: 'finanzenCount' },
+  { href: '/kalender', label: 'Kalender', summaryKey: 'kalenderCount' },
+  { href: '/kommunikation', label: 'Kommunikation', summaryKey: 'kommunikationCount' },
+];
+
+const createEmptySummary = (): DashboardSummary => ({
+  kundenCount: 0,
+  hundeCount: 0,
+  kurseCount: 0,
+  finanzenCount: 0,
+  kalenderCount: 0,
+  kommunikationCount: 0,
+});
+
+const formatCount = (value: number): string => new Intl.NumberFormat('de-DE').format(value);
 
 export const App = () => {
   const [email, setEmail] = useState('');
@@ -26,6 +55,9 @@ export const App = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
 
   useEffect(() => {
     const consoleSpy = createConsoleSpy();
@@ -34,7 +66,9 @@ export const App = () => {
   }, []);
 
   useEffect(() => {
-    if (!token || user) {
+    if (!token) {
+      setUser(null);
+      setSummary(null);
       return;
     }
 
@@ -71,6 +105,7 @@ export const App = () => {
         if (!cancelled) {
           setToken(null);
           setUser(null);
+          setSummary(null);
           setSessionError('ERR_SESSION_LOAD_001');
         }
       } finally {
@@ -87,7 +122,62 @@ export const App = () => {
     return () => {
       cancelled = true;
     };
-  }, [token, user]);
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) {
+      setSummary(null);
+      setSummaryError(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadSummary = async () => {
+      setIsLoadingSummary(true);
+      setSummaryError(null);
+
+      try {
+        const response = await fetch('/dashboard', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('ERR_DASHBOARD_LOAD_001');
+        }
+
+        const result = (await response.json()) as DashboardSummary | undefined;
+
+        if (!result) {
+          throw new Error('ERR_DASHBOARD_LOAD_001');
+        }
+
+        if (!cancelled) {
+          setSummary(result);
+        }
+      } catch (error) {
+        console.error('Failed to load dashboard summary', error);
+        if (!cancelled) {
+          setSummary(createEmptySummary());
+          setSummaryError('ERR_DASHBOARD_LOAD_001');
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingSummary(false);
+        }
+      }
+    };
+
+    loadSummary().catch((error) => {
+      console.error('ERR_DASHBOARD_LOAD_001', error);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -114,10 +204,11 @@ export const App = () => {
         | { token?: string; user?: UserProfile }
         | undefined;
 
-      if (result?.token && result.user) {
+      if (result?.token) {
         localStorage.setItem(TOKEN_STORAGE_KEY, result.token);
         setToken(result.token);
-        setUser(result.user);
+        setUser(null);
+        setSummary(null);
         setPassword('');
         setLoginMessage('Logged in');
       } else {
@@ -131,39 +222,49 @@ export const App = () => {
     }
   };
 
+  const dashboardSummary = useMemo(() => summary ?? createEmptySummary(), [summary]);
+  const displayName = user?.name?.trim() ? user.name : user?.email;
+
   return (
     <main>
       <h1>Dogule Portal</h1>
       {token && user ? (
         <section aria-label="dashboard">
-          <h2>Dashboard</h2>
-          <p>Welcome back, {user.email}!</p>
+          <header>
+            <h2>Dashboard</h2>
+            <p>Welcome back, {displayName}!</p>
+          </header>
           <section aria-label="profile">
-            <h3>Profile</h3>
+            <h3>Profil</h3>
             <dl>
               <div>
                 <dt>Email</dt>
                 <dd>{user.email}</dd>
               </div>
               <div>
-                <dt>Role</dt>
+                <dt>Rolle</dt>
                 <dd>{user.role}</dd>
               </div>
             </dl>
           </section>
-          <section aria-label="quick-links">
-            <h3>Quick Links</h3>
-            <ul>
-              <li>
-                <a href="/kunden">Kunden</a>
-              </li>
-              <li>
-                <a href="/hunde">Hunde</a>
-              </li>
-              <li>
-                <a href="/kurse">Kurse</a>
-              </li>
+          <section aria-label="module-overview">
+            <h3>Modulübersicht</h3>
+            {summaryError && <p role="alert">{summaryError}</p>}
+            <ul aria-label="Dashboard navigation">
+              {DASHBOARD_LINKS.map((link) => (
+                <li key={link.href}>
+                  <a href={link.href} aria-label={`${link.label} ansehen`}>
+                    <article>
+                      <h4>{link.label}</h4>
+                      <p aria-label={`${link.label} Gesamtzahl`}>
+                        {formatCount(dashboardSummary[link.summaryKey])}
+                      </p>
+                    </article>
+                  </a>
+                </li>
+              ))}
             </ul>
+            {isLoadingSummary && <p role="status">Dashboard wird geladen…</p>}
           </section>
         </section>
       ) : (
@@ -197,9 +298,7 @@ export const App = () => {
           )}
         </section>
       )}
-      {isLoadingProfile && (
-        <p role="status">Loading session…</p>
-      )}
+      {isLoadingProfile && <p role="status">Loading session…</p>}
       {sessionError && <p role="alert">{sessionError}</p>}
     </main>
   );

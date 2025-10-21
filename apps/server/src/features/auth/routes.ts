@@ -56,7 +56,17 @@ router.get('/me', authMiddleware, (req, res) => {
       return;
     }
 
-    res.json({ user: request.user });
+    const name =
+      typeof request.user.name === 'string' && request.user.name.trim().length > 0
+        ? String(request.user.name)
+        : request.user.email;
+
+    res.json({
+      user: {
+        ...request.user,
+        name,
+      },
+    });
   } catch (error) {
     if (process.env.NODE_ENV !== 'test') {
       console.error('[auth] failed to load profile', error);
