@@ -51,6 +51,16 @@ describe('auth routes', () => {
       .set('Authorization', `Bearer ${loginResponse.body.token}`);
 
     expect(protectedResponse.status).toBe(200);
+
+    const meResponse = await agent
+      .get('/auth/me')
+      .set('Authorization', `Bearer ${loginResponse.body.token}`);
+
+    expect(meResponse.status).toBe(200);
+    expect(meResponse.body.user).toMatchObject({
+      email: TEST_EMAIL,
+      role: 'user',
+    });
   });
 
   it('rejects unauthenticated requests with ERR_AUTH_401', async () => {
@@ -58,6 +68,16 @@ describe('auth routes', () => {
     const agent = request(app);
 
     const response = await agent.get('/api/hunde');
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({ message: 'ERR_AUTH_401' });
+  });
+
+  it('requires authentication for /auth/me', async () => {
+    const { app } = await createApp();
+    const agent = request(app);
+
+    const response = await agent.get('/auth/me');
 
     expect(response.status).toBe(401);
     expect(response.body).toEqual({ message: 'ERR_AUTH_401' });
