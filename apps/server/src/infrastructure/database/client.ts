@@ -180,6 +180,10 @@ export const createDatabaseClient = (url?: string): DatabaseClient => {
     return new DatabaseClient({ mode: 'postgres', url: candidateUrl });
   }
 
+  if (candidateUrl && candidateUrl.startsWith('pg-mem://')) {
+    return new DatabaseClient({ mode: 'memory' });
+  }
+
   if (process.env.NODE_ENV !== 'test') {
     console.warn('WARN_DB_FALLBACK_001 using pg-mem');
   }
