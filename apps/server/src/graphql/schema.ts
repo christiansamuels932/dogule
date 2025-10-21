@@ -41,19 +41,21 @@ export const typeDefs = gql`
 
   type Hund {
     id: ID!
+    kundeId: ID!
     name: String!
-    breed: String!
-    ownerId: String!
-    dateOfBirth: String
+    geburtsdatum: String
+    rasse: String
+    notizen: String
     createdAt: String!
     updatedAt: String!
   }
 
   input HundInput {
+    kundeId: ID!
     name: String!
-    breed: String!
-    ownerId: String!
-    dateOfBirth: String
+    geburtsdatum: String
+    rasse: String
+    notizen: String
   }
 
   type Kurs {

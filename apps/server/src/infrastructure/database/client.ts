@@ -138,11 +138,19 @@ export class DatabaseClient {
           notes TEXT
         );
         CREATE INDEX IF NOT EXISTS idx_kunden_created_at ON kunden(created_at);
+        DROP TABLE IF EXISTS hunde;
         CREATE TABLE IF NOT EXISTS hunde (
-          id TEXT PRIMARY KEY,
-          owner_id UUID,
-          CONSTRAINT fk_hunde_owner FOREIGN KEY (owner_id) REFERENCES kunden (id) ON DELETE SET NULL
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          kunde_id UUID NOT NULL REFERENCES kunden(id) ON DELETE CASCADE,
+          name TEXT NOT NULL,
+          geburtsdatum DATE,
+          rasse TEXT,
+          notizen TEXT
         );
+        CREATE INDEX IF NOT EXISTS idx_hunde_kunde_id ON hunde(kunde_id);
+        CREATE INDEX IF NOT EXISTS idx_hunde_created_at ON hunde(created_at);
         CREATE TABLE IF NOT EXISTS kurse (
           id TEXT PRIMARY KEY
         );
