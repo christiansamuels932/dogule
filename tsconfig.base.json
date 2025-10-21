@@ -22,6 +22,12 @@
       ],
       "@dogule/testing/*": [
         "packages/testing/src/*"
+      ],
+      "@dogule/utils": [
+        "packages/utils/src/index.ts"
+      ],
+      "@dogule/utils/*": [
+        "packages/utils/src/*"
       ]
     },
     "types": [
