@@ -117,6 +117,26 @@ export class DatabaseClient {
         hashed_password TEXT NOT NULL,
         role TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS kunden (
+        id TEXT PRIMARY KEY
+      );
+      CREATE TABLE IF NOT EXISTS hunde (
+        id TEXT PRIMARY KEY,
+        owner_id TEXT,
+        CONSTRAINT fk_hunde_owner FOREIGN KEY (owner_id) REFERENCES kunden (id) ON DELETE SET NULL
+      );
+      CREATE TABLE IF NOT EXISTS kurse (
+        id TEXT PRIMARY KEY
+      );
+      CREATE TABLE IF NOT EXISTS finanzen (
+        id TEXT PRIMARY KEY
+      );
+      CREATE TABLE IF NOT EXISTS kalender (
+        id TEXT PRIMARY KEY
+      );
+      CREATE TABLE IF NOT EXISTS kommunikation (
+        id TEXT PRIMARY KEY
+      );
     `);
   }
 }

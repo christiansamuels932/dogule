@@ -29,15 +29,36 @@ describe('App', () => {
   it('restores a session from local storage', async () => {
     localStorage.setItem('dogule_token', 'token-123');
 
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        user: {
-          sub: 'user-1',
-          email: 'restored@example.com',
-          role: 'admin',
-        },
-      }),
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      if (input === '/auth/me') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            user: {
+              sub: 'user-1',
+              email: 'restored@example.com',
+              role: 'admin',
+              name: 'Restored User',
+            },
+          }),
+        });
+      }
+
+      if (input === '/dashboard') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            kundenCount: 4,
+            hundeCount: 2,
+            kurseCount: 3,
+            finanzenCount: 1,
+            kalenderCount: 5,
+            kommunikationCount: 6,
+          }),
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch: ${input}`));
     });
 
     globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -54,14 +75,41 @@ describe('App', () => {
         headers: expect.objectContaining({ Authorization: 'Bearer token-123' }),
       }),
     );
-    expect(screen.getByText('restored@example.com')).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/dashboard',
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer token-123' }),
+      }),
+    );
+    expect(screen.getByText('Restored User')).toBeInTheDocument();
+    expect(screen.getByText('4')).toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getByText('6')).toBeInTheDocument();
   });
 
   it('clears the session when restore fails', async () => {
     localStorage.setItem('dogule_token', 'token-456');
 
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: false,
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      if (input === '/auth/me') {
+        return Promise.resolve({ ok: false });
+      }
+
+      if (input === '/dashboard') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            kundenCount: 0,
+            hundeCount: 0,
+            kurseCount: 0,
+            finanzenCount: 0,
+            kalenderCount: 0,
+            kommunikationCount: 0,
+          }),
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected fetch: ${input}`));
     });
 
     globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -83,11 +131,34 @@ describe('App', () => {
             ok: true,
             json: async () => ({
               token: 'token-789',
+            }),
+          });
+        }
+
+        if (input === '/auth/me') {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
               user: {
                 sub: 'user-2',
                 email: 'new@example.com',
                 role: 'user',
+                name: 'New User',
               },
+            }),
+          });
+        }
+
+        if (input === '/dashboard') {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              kundenCount: 1,
+              hundeCount: 1,
+              kurseCount: 2,
+              finanzenCount: 0,
+              kalenderCount: 0,
+              kommunikationCount: 0,
             }),
           });
         }
@@ -116,6 +187,13 @@ describe('App', () => {
       '/auth/login',
       expect.objectContaining({ method: 'POST' }),
     );
-    expect(screen.getByText('new@example.com')).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/dashboard',
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer token-789' }),
+      }),
+    );
+    expect(screen.getByText('New User')).toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
   });
 });

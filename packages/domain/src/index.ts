@@ -114,3 +114,12 @@ export interface PaginatedResult<T> {
   page: number;
   pageSize: number;
 }
+
+export interface DashboardSummary {
+  kundenCount: number;
+  hundeCount: number;
+  kurseCount: number;
+  finanzenCount: number;
+  kalenderCount: number;
+  kommunikationCount: number;
+}

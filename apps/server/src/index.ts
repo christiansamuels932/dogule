@@ -18,6 +18,7 @@ import kurseRouter from './features/kurse/routes';
 import finanzenRouter from './features/finanzen/routes';
 import kalenderRouter from './features/kalender/routes';
 import kommunikationRouter from './features/kommunikation/routes';
+import dashboardRouter from './features/dashboard/routes';
 import { resolvers, typeDefs } from './graphql/schema';
 
 const createApp = async () => {
@@ -42,6 +43,7 @@ const createApp = async () => {
   app.use('/api/finanzen', finanzenRouter);
   app.use('/api/kalender', kalenderRouter);
   app.use('/api/kommunikation', kommunikationRouter);
+  app.use('/dashboard', dashboardRouter);
 
   const apollo = new ApolloServer({ typeDefs, resolvers });
   await apollo.start();
