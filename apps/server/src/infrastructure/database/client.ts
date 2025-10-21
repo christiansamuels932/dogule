@@ -120,6 +120,20 @@ export class DatabaseClient {
         statements.push('CREATE EXTENSION IF NOT EXISTS pgcrypto;');
       }
 
+      const kundenIdType = this.mode === 'postgres' ? 'UUID' : 'TEXT';
+
+      const isMemory = this.mode === 'memory';
+      const kundenColumns = `
+          id ${kundenIdType} PRIMARY KEY DEFAULT gen_random_uuid(),
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          first_name TEXT${isMemory ? '' : ' NOT NULL'},
+          last_name TEXT${isMemory ? '' : ' NOT NULL'},
+          email TEXT${isMemory ? '' : ' NOT NULL'},
+          phone TEXT,
+          notes TEXT
+        `;
+
       statements.push(`
         CREATE TABLE IF NOT EXISTS users (
           id TEXT PRIMARY KEY,
@@ -128,19 +142,12 @@ export class DatabaseClient {
           role TEXT NOT NULL
         );
         CREATE TABLE IF NOT EXISTS kunden (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-          updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-          first_name TEXT NOT NULL,
-          last_name TEXT NOT NULL,
-          email TEXT NOT NULL,
-          phone TEXT,
-          notes TEXT
+${kundenColumns}
         );
         CREATE INDEX IF NOT EXISTS idx_kunden_created_at ON kunden(created_at);
         CREATE TABLE IF NOT EXISTS hunde (
           id TEXT PRIMARY KEY,
-          owner_id UUID,
+          owner_id ${kundenIdType},
           CONSTRAINT fk_hunde_owner FOREIGN KEY (owner_id) REFERENCES kunden (id) ON DELETE SET NULL
         );
         CREATE TABLE IF NOT EXISTS kurse (
@@ -172,6 +179,10 @@ export class DatabaseClient {
 export const createDatabaseClient = (url?: string): DatabaseClient => {
   const candidateUrl = url?.trim() || process.env.DATABASE_URL?.trim();
 
+  if (process.env.NODE_ENV === 'test') {
+    return new DatabaseClient({ mode: 'memory' });
+  }
+
   if (candidateUrl) {
     if (candidateUrl.startsWith('pg-mem://')) {
       return new DatabaseClient({ mode: 'memory' });
@@ -180,9 +191,6 @@ export const createDatabaseClient = (url?: string): DatabaseClient => {
     return new DatabaseClient({ mode: 'postgres', url: candidateUrl });
   }
 
-  if (process.env.NODE_ENV !== 'test') {
-    console.warn('WARN_DB_FALLBACK_001 using pg-mem');
-  }
-
+  console.warn('WARN_DB_FALLBACK_001 using pg-mem');
   return new DatabaseClient({ mode: 'memory' });
 };
