@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+
 import { Pool, QueryResult } from 'pg';
 import { IMemoryDb, newDb } from 'pg-mem';
 
@@ -57,6 +59,12 @@ export class DatabaseClient {
     } else {
       try {
         this.memoryDb = newDb();
+        this.memoryDb.public.registerFunction({
+          name: 'gen_random_uuid',
+          returns: 'uuid',
+          implementation: () => randomUUID(),
+          impure: true,
+        });
         const { Pool: MemoryPool } = this.memoryDb.adapters.createPg();
         this.pool = new MemoryPool() as unknown as Pool;
       } catch (error) {
@@ -108,7 +116,13 @@ export class DatabaseClient {
     }
 
     try {
-      await pool.query(`
+      const statements: string[] = [];
+
+      if (this.mode === 'postgres') {
+        statements.push('CREATE EXTENSION IF NOT EXISTS pgcrypto;');
+      }
+
+      statements.push(`
         CREATE TABLE IF NOT EXISTS users (
           id TEXT PRIMARY KEY,
           email TEXT UNIQUE NOT NULL,
@@ -116,11 +130,19 @@ export class DatabaseClient {
           role TEXT NOT NULL
         );
         CREATE TABLE IF NOT EXISTS kunden (
-          id TEXT PRIMARY KEY
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          first_name TEXT NOT NULL,
+          last_name TEXT NOT NULL,
+          email TEXT NOT NULL,
+          phone TEXT,
+          notes TEXT
         );
+        CREATE INDEX IF NOT EXISTS idx_kunden_created_at ON kunden(created_at);
         CREATE TABLE IF NOT EXISTS hunde (
           id TEXT PRIMARY KEY,
-          owner_id TEXT,
+          owner_id UUID,
           CONSTRAINT fk_hunde_owner FOREIGN KEY (owner_id) REFERENCES kunden (id) ON DELETE SET NULL
         );
         CREATE TABLE IF NOT EXISTS kurse (
@@ -136,6 +158,10 @@ export class DatabaseClient {
           id TEXT PRIMARY KEY
         );
       `);
+
+      for (const statement of statements) {
+        await pool.query(statement);
+      }
       this.bootstrapped = true;
       logInfo('LOG_DB_BOOTSTRAP_001');
     } catch (error) {
@@ -149,7 +175,15 @@ export const createDatabaseClient = (url?: string): DatabaseClient => {
   const candidateUrl = url?.trim() || process.env.DATABASE_URL?.trim();
 
   if (candidateUrl) {
+    if (candidateUrl.startsWith('pg-mem://')) {
+      return new DatabaseClient({ mode: 'memory' });
+    }
+
     return new DatabaseClient({ mode: 'postgres', url: candidateUrl });
+  }
+
+  if (candidateUrl && candidateUrl.startsWith('pg-mem://')) {
+    return new DatabaseClient({ mode: 'memory' });
   }
 
   if (process.env.NODE_ENV !== 'test') {

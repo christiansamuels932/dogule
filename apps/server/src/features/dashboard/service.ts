@@ -1,11 +1,9 @@
 import type { DashboardSummary } from '../../../../../packages/domain';
 import { getDatabaseClient } from '../../infrastructure';
 import type { DatabaseClient } from '../../infrastructure';
+import { KundenRepository } from '../kunden/repository';
 
-import { logError } from '@dogule/utils';
-
-const SUMMARY_QUERIES: Record<keyof DashboardSummary, string> = {
-  kundenCount: 'SELECT COUNT(*)::int AS count FROM kunden',
+const SUMMARY_QUERIES: Record<Exclude<keyof DashboardSummary, 'kundenCount'>, string> = {
   hundeCount: 'SELECT COUNT(*)::int AS count FROM hunde',
   kurseCount: 'SELECT COUNT(*)::int AS count FROM kurse',
   finanzenCount: 'SELECT COUNT(*)::int AS count FROM finanzen',
@@ -25,13 +23,23 @@ const createEmptySummary = (): DashboardSummary => ({
 });
 
 export class DashboardService {
-  constructor(private readonly database: Database = getDatabaseClient()) {}
+  constructor(
+    private readonly database: Database = getDatabaseClient(),
+    private readonly kundenRepository = new KundenRepository(),
+  ) {}
 
   async getSummary(): Promise<DashboardSummary> {
     const summary = createEmptySummary();
 
+    try {
+      summary.kundenCount = await this.kundenRepository.count();
+    } catch (error) {
+      console.error('ERR_DASHBOARD_001', error);
+      summary.kundenCount = 0;
+    }
+
     for (const [key, query] of Object.entries(SUMMARY_QUERIES) as Array<
-      [keyof DashboardSummary, string]
+      [Exclude<keyof DashboardSummary, 'kundenCount'>, string]
     >) {
       try {
         const rows = await this.database.query<{ count: number }>({ text: query });

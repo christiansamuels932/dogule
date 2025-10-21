@@ -36,14 +36,14 @@ export class AuthService {
   async login(payload: LoginInput): Promise<AuthResult> {
     const existing = await this.repository.findByEmail(payload.email);
     if (!existing) {
-      const error = new Error('ERR_AUTH_401');
+      const error = new Error('ERR_AUTH_LOGIN_001');
       (error as Error & { status?: number }).status = 401;
       throw error;
     }
 
     const passwordMatches = await bcrypt.compare(payload.password, existing.hashedPassword);
     if (!passwordMatches) {
-      const error = new Error('ERR_AUTH_401');
+      const error = new Error('ERR_AUTH_LOGIN_001');
       (error as Error & { status?: number }).status = 401;
       throw error;
     }
