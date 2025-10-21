@@ -6,11 +6,27 @@ import {
 } from '../../../../../packages/domain';
 import { KundenRepository } from './repository';
 
+const DEFAULT_PAGE_SIZE = 50;
+
 export class KundenService {
   constructor(private readonly repository = new KundenRepository()) {}
 
-  list(query?: PaginationQuery): Promise<PaginatedResult<Customer>> {
-    return this.repository.findAll(query);
+  async list(query?: PaginationQuery): Promise<PaginatedResult<Customer>> {
+    const page = query?.page && query.page > 0 ? query.page : 1;
+    const pageSize = query?.pageSize && query.pageSize > 0 ? query.pageSize : DEFAULT_PAGE_SIZE;
+    const offset = (page - 1) * pageSize;
+
+    const [data, total] = await Promise.all([
+      this.repository.list({ limit: pageSize, offset }),
+      this.repository.count(),
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      pageSize,
+    };
   }
 
   get(id: string): Promise<Customer | undefined> {
@@ -26,6 +42,6 @@ export class KundenService {
   }
 
   delete(id: string): Promise<boolean> {
-    return this.repository.delete(id);
+    return this.repository.remove(id);
   }
 }

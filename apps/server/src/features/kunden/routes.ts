@@ -1,9 +1,23 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
+import { ZodError } from 'zod';
+
 import { KundenService } from './service';
 import { parseCustomerCreateInput, parseCustomerUpdateInput } from './schemas';
 
 const router = Router();
 const service = new KundenService();
+
+const handleValidationError = (error: unknown, res: Response) => {
+  if (error instanceof ZodError) {
+    res.status(400).json({
+      message: 'ERR_KUNDEN_INVALID_PAYLOAD',
+      details: error.flatten(),
+    });
+    return true;
+  }
+
+  return false;
+};
 
 router.get('/', async (req, res, next) => {
   try {
@@ -34,7 +48,9 @@ router.post('/', async (req, res, next) => {
     const customer = await service.create(payload);
     res.status(201).json(customer);
   } catch (error) {
-    next(error);
+    if (!handleValidationError(error, res)) {
+      next(error);
+    }
   }
 });
 
@@ -47,7 +63,9 @@ router.put('/:id', async (req, res, next) => {
     }
     res.json(customer);
   } catch (error) {
-    next(error);
+    if (!handleValidationError(error, res)) {
+      next(error);
+    }
   }
 });
 
