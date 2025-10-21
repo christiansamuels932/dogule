@@ -1,0 +1,82 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dogule}
+      POSTGRES_USER: ${POSTGRES_USER:-dogule}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dogule}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER} || (echo ERR_HEALTH_001 && exit 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  server:
+    image: ${SERVER_IMAGE:?ERR_DEPLOY_ENV_001 Missing SERVER_IMAGE reference}
+    restart: always
+    env_file:
+      - .env.prod
+    environment:
+      NODE_ENV: production
+      PORT: ${SERVER_PORT:-4000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        ["CMD-SHELL", "wget -qO- http://127.0.0.1:$${PORT}/healthz > /dev/null || (echo ERR_HEALTH_001 && exit 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  web:
+    image: ${WEB_IMAGE:?ERR_DEPLOY_ENV_001 Missing WEB_IMAGE reference}
+    restart: always
+    environment:
+      PORT: ${WEB_PORT:-4173}
+    depends_on:
+      server:
+        condition: service_healthy
+    healthcheck:
+      test:
+        ["CMD-SHELL", "wget -qO- http://127.0.0.1:$${PORT} > /dev/null || (echo ERR_HEALTH_001 && exit 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  nginx:
+    image: nginx:1.25-alpine
+    restart: always
+    ports:
+      - '80:80'
+      - '443:443'
+    depends_on:
+      web:
+        condition: service_healthy
+      server:
+        condition: service_healthy
+    volumes:
+      - ./deploy/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/nginx/logs:/var/log/nginx
+      - ./deploy/certs:/etc/nginx/certs:ro
+      - nginx-cache:/var/cache/nginx
+    healthcheck:
+      test:
+        ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz > /dev/null || (echo ERR_HEALTH_001 && exit 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  postgres-data:
+  nginx-cache:
