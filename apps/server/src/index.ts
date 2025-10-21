@@ -11,6 +11,7 @@ import {
   loadConfig,
   requestLogger,
 } from './infrastructure';
+import authRouter from './features/auth/routes';
 import kundenRouter from './features/kunden/routes';
 import hundeRouter from './features/hunde/routes';
 import kurseRouter from './features/kurse/routes';
@@ -19,13 +20,20 @@ import kalenderRouter from './features/kalender/routes';
 import kommunikationRouter from './features/kommunikation/routes';
 import { resolvers, typeDefs } from './graphql/schema';
 
-const createServer = async () => {
+const createApp = async () => {
   const app = express();
   const config = loadConfig();
   const databaseClient = getDatabaseClient();
+  await databaseClient.connect();
 
   app.use(express.json());
   app.use(requestLogger);
+
+  app.get('/healthz', (_req, res) => {
+    res.json({ status: 'ok' });
+  });
+
+  app.use('/auth', authRouter);
   app.use(authMiddleware);
 
   app.use('/api/kunden', kundenRouter);
@@ -35,17 +43,17 @@ const createServer = async () => {
   app.use('/api/kalender', kalenderRouter);
   app.use('/api/kommunikation', kommunikationRouter);
 
-  app.get('/healthz', (_req, res) => {
-    res.json({ status: 'ok' });
-  });
-
   const apollo = new ApolloServer({ typeDefs, resolvers });
   await apollo.start();
   apollo.applyMiddleware({ app, path: '/graphql' });
 
   app.use(errorHandler);
 
-  await databaseClient.connect();
+  return { app, config };
+};
+
+const createServer = async () => {
+  const { app, config } = await createApp();
 
   app.listen(config.port, () => {
     console.log(`Server is running on port ${config.port}`);
@@ -53,7 +61,7 @@ const createServer = async () => {
   });
 };
 
-export { createServer };
+export { createServer, createApp };
 
 if (process.env.NODE_ENV !== 'test') {
   createServer().catch((error) => {
