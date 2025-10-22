@@ -1,6 +1,8 @@
 import request, { SuperTest, Test } from 'supertest';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ErrorCode } from '@dogule/domain';
+
 let createApp: typeof import('../../../index').createApp;
 let getDatabaseClient: typeof import('../../../infrastructure').getDatabaseClient;
 let DashboardService: typeof import('../../dashboard/service').DashboardService;
@@ -235,7 +237,7 @@ describe('finanzen integration', () => {
         typ: 'invalid' as unknown as 'einnahme',
         betragCents: 1000,
       }),
-    ).rejects.toThrowError('ERR_FINANZ_CREATE_001');
+    ).rejects.toThrowError(ErrorCode.ERR_FINANZ_CREATE_001);
 
     expect(errorSpy).toHaveBeenCalledWith('ERR_FINANZ_CREATE_001', expect.any(Error));
     errorSpy.mockRestore();

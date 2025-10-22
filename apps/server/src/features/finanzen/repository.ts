@@ -1,10 +1,12 @@
 import {
+  ErrorCode,
   Finanz,
   FinanzCreateInput,
   FinanzListFilters,
   FinanzListResult,
   FinanzUpdateInput,
-} from '../../../../../packages/domain';
+  LogCode,
+} from '@dogule/domain';
 import { logError, logInfo } from '@dogule/utils';
 import { getDatabaseClient } from '../../infrastructure';
 import type { DatabaseClient } from '../../infrastructure';
@@ -103,11 +105,11 @@ export class FinanzenRepository {
       });
 
       const finanz = this.mapRow(rows[0]);
-      logInfo('LOG_FINANZ_CREATE_001', finanz.id);
+      logInfo(LogCode.LOG_FINANZ_CREATE_001, finanz.id);
       return finanz;
     } catch (error) {
-      logError('ERR_FINANZ_CREATE_001', error);
-      throw new Error('ERR_FINANZ_CREATE_001');
+      logError(ErrorCode.ERR_FINANZ_CREATE_001, error);
+      throw new Error(ErrorCode.ERR_FINANZ_CREATE_001);
     }
   }
 
@@ -125,8 +127,8 @@ export class FinanzenRepository {
       const row = rows[0];
       return row ? this.mapRow(row) : undefined;
     } catch (error) {
-      logError('ERR_FINANZ_READ_001', error);
-      throw new Error('ERR_FINANZ_READ_001');
+      logError(ErrorCode.ERR_FINANZ_READ_001, error);
+      throw new Error(ErrorCode.ERR_FINANZ_READ_001);
     }
   }
 
@@ -166,8 +168,8 @@ export class FinanzenRepository {
         offset,
       };
     } catch (error) {
-      logError('ERR_FINANZ_READ_001', error);
-      throw new Error('ERR_FINANZ_READ_001');
+      logError(ErrorCode.ERR_FINANZ_READ_001, error);
+      throw new Error(ErrorCode.ERR_FINANZ_READ_001);
     }
   }
 
@@ -187,8 +189,8 @@ export class FinanzenRepository {
 
       return rows[0]?.sum ?? 0;
     } catch (error) {
-      logError('ERR_FINANZ_SUM_001', error);
-      throw new Error('ERR_FINANZ_SUM_001');
+      logError(ErrorCode.ERR_FINANZ_SUM_001, error);
+      throw new Error(ErrorCode.ERR_FINANZ_SUM_001);
     }
   }
 
@@ -250,11 +252,11 @@ export class FinanzenRepository {
       }
 
       const finanz = this.mapRow(row);
-      logInfo('LOG_FINANZ_UPDATE_001', finanz.id);
+      logInfo(LogCode.LOG_FINANZ_UPDATE_001, finanz.id);
       return finanz;
     } catch (error) {
-      logError('ERR_FINANZ_UPDATE_001', error);
-      throw new Error('ERR_FINANZ_UPDATE_001');
+      logError(ErrorCode.ERR_FINANZ_UPDATE_001, error);
+      throw new Error(ErrorCode.ERR_FINANZ_UPDATE_001);
     }
   }
 
@@ -271,13 +273,13 @@ export class FinanzenRepository {
 
       const deleted = rows.length > 0;
       if (deleted) {
-        logInfo('LOG_FINANZ_DELETE_001', id);
+        logInfo(LogCode.LOG_FINANZ_DELETE_001, id);
       }
 
       return deleted;
     } catch (error) {
-      logError('ERR_FINANZ_DELETE_001', error);
-      throw new Error('ERR_FINANZ_DELETE_001');
+      logError(ErrorCode.ERR_FINANZ_DELETE_001, error);
+      throw new Error(ErrorCode.ERR_FINANZ_DELETE_001);
     }
   }
 
@@ -289,8 +291,8 @@ export class FinanzenRepository {
 
       return rows[0]?.count ?? 0;
     } catch (error) {
-      logError('ERR_FINANZ_READ_001', error);
-      throw new Error('ERR_FINANZ_READ_001');
+      logError(ErrorCode.ERR_FINANZ_READ_001, error);
+      throw new Error(ErrorCode.ERR_FINANZ_READ_001);
     }
   }
 }

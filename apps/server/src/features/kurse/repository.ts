@@ -1,4 +1,11 @@
-import { Course, CourseCreateInput, PaginatedResult, PaginationQuery } from '@dogule/domain';
+import {
+  Course,
+  CourseCreateInput,
+  ErrorCode,
+  LogCode,
+  PaginatedResult,
+  PaginationQuery,
+} from '@dogule/domain';
 
 import { getDatabaseClient } from '../../infrastructure';
 import type { DatabaseClient } from '../../infrastructure';
@@ -66,11 +73,11 @@ export class KurseRepository {
       });
 
       const kurs = this.mapRow(rows[0]);
-      console.info('LOG_KURSE_CREATE_001', kurs.id);
+      console.info(LogCode.LOG_KURSE_CREATE_001, kurs.id);
       return kurs;
     } catch (error) {
-      console.error('ERR_KURSE_CREATE_001', error);
-      throw new Error('ERR_KURSE_CREATE_001');
+      console.error(ErrorCode.ERR_KURSE_CREATE_001, error);
+      throw new Error(ErrorCode.ERR_KURSE_CREATE_001);
     }
   }
 
@@ -89,8 +96,8 @@ export class KurseRepository {
       const row = rows[0];
       return row ? this.mapRow(row) : undefined;
     } catch (error) {
-      console.error('ERR_KURSE_READ_001', error);
-      throw new Error('ERR_KURSE_READ_001');
+      console.error(ErrorCode.ERR_KURSE_READ_001, error);
+      throw new Error(ErrorCode.ERR_KURSE_READ_001);
     }
   }
 
@@ -126,8 +133,8 @@ export class KurseRepository {
         offset,
       };
     } catch (error) {
-      console.error('ERR_KURSE_LIST_001', error);
-      throw new Error('ERR_KURSE_LIST_001');
+      console.error(ErrorCode.ERR_KURSE_LIST_001, error);
+      throw new Error(ErrorCode.ERR_KURSE_LIST_001);
     }
   }
 
@@ -204,11 +211,11 @@ export class KurseRepository {
       }
 
       const kurs = this.mapRow(row);
-      console.info('LOG_KURSE_UPDATE_001', kurs.id);
+      console.info(LogCode.LOG_KURSE_UPDATE_001, kurs.id);
       return kurs;
     } catch (error) {
-      console.error('ERR_KURSE_UPDATE_001', error);
-      throw new Error('ERR_KURSE_UPDATE_001');
+      console.error(ErrorCode.ERR_KURSE_UPDATE_001, error);
+      throw new Error(ErrorCode.ERR_KURSE_UPDATE_001);
     }
   }
 
@@ -225,13 +232,13 @@ export class KurseRepository {
 
       const deleted = rows.length > 0;
       if (deleted) {
-        console.info('LOG_KURSE_DELETE_001', id);
+        console.info(LogCode.LOG_KURSE_DELETE_001, id);
       }
 
       return deleted;
     } catch (error) {
-      console.error('ERR_KURSE_DELETE_001', error);
-      throw new Error('ERR_KURSE_DELETE_001');
+      console.error(ErrorCode.ERR_KURSE_DELETE_001, error);
+      throw new Error(ErrorCode.ERR_KURSE_DELETE_001);
     }
   }
 
@@ -246,8 +253,8 @@ export class KurseRepository {
 
       return this.toNumber(rows[0]?.count ?? 0);
     } catch (error) {
-      console.error('ERR_KURSE_COUNT_001', error);
-      throw new Error('ERR_KURSE_COUNT_001');
+      console.error(ErrorCode.ERR_KURSE_COUNT_001, error);
+      throw new Error(ErrorCode.ERR_KURSE_COUNT_001);
     }
   }
 
