@@ -17,7 +17,9 @@
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write .",
     "spec:check": "npm run spec:check -w apps/server",
-    "typecheck": "npm run typecheck -w apps/server"
+    "typecheck": "npm run typecheck -w apps/server",
+    "db:backup": "sh -c 'pg_dump --host=\"$PGHOST\" --port=\"${PGPORT:-5432}\" --username=\"$PGUSER\" --dbname=\"$PGDATABASE\" --format=custom --no-owner --file=\"$PG_BACKUP_FILE\"'",
+    "db:restore": "sh -c 'pg_restore --host=\"$PGHOST\" --port=\"${PGPORT:-5432}\" --username=\"$PGUSER\" --dbname=\"$PGDATABASE\" --clean --if-exists --no-owner \"$PG_BACKUP_FILE\"'"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
