@@ -1,0 +1,13 @@
+{
+  "name": "zod-to-openapi",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "types": "./src/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "import": "./src/index.js"
+    }
+  }
+}

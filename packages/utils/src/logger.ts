@@ -1,9 +1,9 @@
 type LogLevel = 'info' | 'warn' | 'error';
 
 const createLogger = (level: LogLevel) => {
-  const method = console[level].bind(console);
-
   return (code: string, ...details: unknown[]) => {
+    const method = console[level].bind(console);
+
     if (!code) {
       method(`[${level.toUpperCase()}]`, ...details);
       return;

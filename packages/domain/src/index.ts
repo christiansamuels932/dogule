@@ -89,40 +89,91 @@ export interface FinanzListResult {
   offset: number;
 }
 
-export interface CalendarEvent {
+export type KalenderEventStatus = 'geplant' | 'bestaetigt' | 'abgesagt';
+
+export interface KalenderEvent {
   id: string;
-  title: string;
-  description?: string;
-  start: string;
-  end: string;
-  relatedCourseId?: string;
-  relatedDogId?: string;
+  createdAt: string;
+  updatedAt: string;
+  titel: string;
+  beschreibung?: string;
+  startAt: string;
+  endAt: string;
+  ort?: string;
+  kundeId?: string;
+  hundId?: string;
+  status: KalenderEventStatus;
 }
 
-export interface CalendarEventCreateInput {
-  title: string;
-  description?: string;
-  start: string;
-  end: string;
-  relatedCourseId?: string;
-  relatedDogId?: string;
+export interface KalenderEventCreateInput {
+  titel: string;
+  beschreibung?: string;
+  startAt: string;
+  endAt: string;
+  ort?: string;
+  kundeId?: string;
+  hundId?: string;
+  status?: KalenderEventStatus;
 }
 
-export interface Message {
+export type KalenderEventUpdateInput = Partial<KalenderEventCreateInput>;
+
+export interface KalenderListFilters {
+  from?: string;
+  to?: string;
+  kundeId?: string;
+  hundId?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface KalenderListResult {
+  data: KalenderEvent[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export type KommunikationRichtung = 'eingehend' | 'ausgehend';
+
+export interface Kommunikation {
   id: string;
-  senderId: string;
-  recipientId: string;
-  subject: string;
-  body: string;
-  sentAt: string;
-  readAt?: string;
+  kanal: string;
+  richtung: KommunikationRichtung;
+  betreff: string;
+  inhalt: string;
+  kundeId?: string;
+  hundId?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface MessageCreateInput {
-  senderId: string;
-  recipientId: string;
-  subject: string;
-  body: string;
+export interface KommunikationCreateInput {
+  kanal: string;
+  richtung: KommunikationRichtung;
+  betreff: string;
+  inhalt: string;
+  kundeId?: string;
+  hundId?: string;
+}
+
+export type KommunikationUpdateInput = Partial<KommunikationCreateInput>;
+
+export interface KommunikationListFilters {
+  limit?: number;
+  offset?: number;
+  kundeId?: string;
+  hundId?: string;
+  kanal?: string;
+  from?: string;
+  to?: string;
+}
+
+export interface KommunikationListResult {
+  data: Kommunikation[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 export interface PaginationQuery {
@@ -146,6 +197,7 @@ export interface DashboardSummary {
   finanzenAusgaben: number;
   kalenderCount: number;
   kommunikationCount: number;
+  eventsUpcoming7d: number;
 }
 
 export { ErrorCode, LogCode } from './error-codes';

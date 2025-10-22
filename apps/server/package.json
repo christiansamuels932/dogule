@@ -8,6 +8,7 @@
     "test:watch": "vitest",
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/index.ts",
+    "spec:generate": "tsx scripts/spec-generate.ts",
     "spec:check": "tsx scripts/spec-check.ts",
     "typecheck": "tsc -p tsconfig.typecheck.json",
     "seed": "tsx scripts/seed.ts"
@@ -16,13 +17,14 @@
     "apollo-server-express": "^3.13.0",
     "bcrypt": "^5.1.1",
     "dotenv": "^16.4.5",
-    "express-rate-limit": "workspace:*",
+    "express-rate-limit": "file:../../packages/express-rate-limit",
     "express": "^4.19.2",
     "graphql": "^16.8.1",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.5",
     "pg-mem": "^2.7.11",
-    "zod": "^3.23.0"
+    "zod": "^3.23.0",
+    "zod-to-openapi": "file:../../packages/zod-to-openapi"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
