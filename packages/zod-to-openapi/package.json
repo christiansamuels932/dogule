@@ -3,14 +3,17 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "test": "echo 'No tests yet'"
-  },
+  "main": "./src/index.js",
   "types": "./src/index.d.ts",
+  "scripts": {
+    "build": "node -e \"console.log('zod-to-openapi shim: nothing to build')\"",
+    "test": "vitest run --reporter=dot"
+  },
   "exports": {
     "./package.json": "./package.json",
     ".": {
-      "import": "./src/index.js"
+      "import": "./src/index.js",
+      "types": "./src/index.d.ts"
     }
   }
 }

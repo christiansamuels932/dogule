@@ -7,10 +7,14 @@
     "dev": "vite || echo ERR_WEB_START_001",
     "build": "vite build || echo ERR_WEB_BUILD_001",
     "preview": "vite preview || echo ERR_WEB_PREVIEW_001",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --reporter=dot",
     "e2e": "npx playwright test"
   },
   "dependencies": {
+    "@dogule/domain": "workspace:*",
+    "@dogule/testing": "workspace:*",
+    "@dogule/utils": "workspace:*",
     "react": "^18.3.0",
     "react-dom": "^18.3.0"
   },
