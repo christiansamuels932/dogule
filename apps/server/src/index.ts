@@ -8,11 +8,12 @@ bootstrapEnv();
 
 import {
   authMiddleware,
+  createRateLimiter,
   errorHandler,
   getDatabaseClient,
   loadConfig,
-  createRateLimiter,
   requestLogger,
+  seedDatabase,
 } from './infrastructure';
 import authRouter from './features/auth/routes';
 import kundenRouter from './features/kunden/routes';
@@ -25,11 +26,24 @@ import dashboardRouter from './features/dashboard/routes';
 import { resolvers, typeDefs } from './graphql/schema';
 import { openApiDocument } from './openapi/spec';
 
+const shouldSeedPrealpha = (): boolean => {
+  const flag = process.env.PREALPHA_SEED;
+  if (!flag) {
+    return false;
+  }
+
+  return ['1', 'true', 'yes', 'on'].includes(flag.toLowerCase());
+};
+
 const createApp = async () => {
   const app = express();
   const config = loadConfig();
   const databaseClient = getDatabaseClient();
   await databaseClient.connect();
+
+  if (shouldSeedPrealpha()) {
+    await seedDatabase({ database: databaseClient });
+  }
 
   app.use(express.json());
   app.use(requestLogger);
