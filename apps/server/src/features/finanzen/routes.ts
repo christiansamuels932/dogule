@@ -1,16 +1,60 @@
 import { Router } from 'express';
 import { FinanzenService } from './service';
-import { parseFinancialRecordCreateInput, parseFinancialRecordUpdateInput } from './schemas';
+import { parseFinanzCreateInput, parseFinanzUpdateInput } from './schemas';
+
+const isFinanzTyp = (value: unknown): value is 'einnahme' | 'ausgabe' =>
+  value === 'einnahme' || value === 'ausgabe';
+
+const parseNumberParam = (value: unknown): number | undefined => {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
 
 const router = Router();
 const service = new FinanzenService();
 
 router.get('/', async (req, res, next) => {
   try {
-    const page = req.query.page ? Number(req.query.page) : undefined;
-    const pageSize = req.query.pageSize ? Number(req.query.pageSize) : undefined;
-    const result = await service.list({ page, pageSize });
+    const { from, to, typ } = req.query;
+    const limit = parseNumberParam(req.query.limit);
+    const offset = parseNumberParam(req.query.offset);
+
+    if (typ !== undefined && !isFinanzTyp(typ)) {
+      return res.status(400).json({ message: 'Invalid typ parameter' });
+    }
+
+    const result = await service.list({
+      from: typeof from === 'string' ? from : undefined,
+      to: typeof to === 'string' ? to : undefined,
+      typ: typeof typ === 'string' ? (typ as 'einnahme' | 'ausgabe') : undefined,
+      limit,
+      offset,
+    });
     res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/sum', async (req, res, next) => {
+  try {
+    const { from, to, typ } = req.query;
+
+    if (typ !== undefined && !isFinanzTyp(typ)) {
+      return res.status(400).json({ message: 'Invalid typ parameter' });
+    }
+
+    const sum = await service.sum({
+      from: typeof from === 'string' ? from : undefined,
+      to: typeof to === 'string' ? to : undefined,
+      typ: typeof typ === 'string' ? (typ as 'einnahme' | 'ausgabe') : undefined,
+    });
+
+    res.json({ sum });
   } catch (error) {
     next(error);
   }
@@ -30,9 +74,9 @@ router.get('/:id', async (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
   try {
-    const payload = parseFinancialRecordCreateInput(req.body);
-    const record = await service.create(payload);
-    res.status(201).json(record);
+    const payload = parseFinanzCreateInput(req.body);
+    const finanz = await service.create(payload);
+    res.status(201).json(finanz);
   } catch (error) {
     next(error);
   }
@@ -40,12 +84,12 @@ router.post('/', async (req, res, next) => {
 
 router.put('/:id', async (req, res, next) => {
   try {
-    const payload = parseFinancialRecordUpdateInput(req.body);
-    const record = await service.update(req.params.id, payload);
-    if (!record) {
+    const payload = parseFinanzUpdateInput(req.body);
+    const finanz = await service.update(req.params.id, payload);
+    if (!finanz) {
       return res.status(404).json({ message: 'Financial record not found' });
     }
-    res.json(record);
+    res.json(finanz);
   } catch (error) {
     next(error);
   }

@@ -33,6 +33,8 @@ const createEmptySummary = (): DashboardSummary => ({
   hundeCount: 0,
   kurseCount: 0,
   finanzenCount: 0,
+  finanzenEinnahmen: 0,
+  finanzenAusgaben: 0,
   kalenderCount: 0,
   kommunikationCount: 0,
 });
