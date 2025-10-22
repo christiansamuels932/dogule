@@ -2,6 +2,9 @@ import { defineConfig } from 'vitest/config';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 
+import { initializeVitestEnv } from '../vitest.env';
+
+initializeVitestEnv();
 process.env.DATABASE_URL ??= 'pg-mem://dogule-test';
 
 if (typeof process.stdout?.columns !== 'number' || !Number.isFinite(process.stdout.columns) || process.stdout.columns <= 0) {
