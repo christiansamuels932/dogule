@@ -612,7 +612,7 @@ class MiniWindow {
     const handlers = this.listeners.get(event.type);
     if (handlers) {
       for (const handler of handlers) {
-        event.currentTarget = this;
+        event.currentTarget = this as unknown as MiniNode;
         handler(event);
       }
     }
@@ -722,7 +722,7 @@ export const installMiniDom = () => {
   globalThis.CustomEvent = MiniEvent as unknown as typeof CustomEvent;
   globalThis.requestAnimationFrame = window.requestAnimationFrame.bind(window) as typeof requestAnimationFrame;
   globalThis.cancelAnimationFrame = window.cancelAnimationFrame.bind(window) as typeof cancelAnimationFrame;
-  globalThis.getComputedStyle = window.getComputedStyle.bind(window) as typeof getComputedStyle;
+  globalThis.getComputedStyle = window.getComputedStyle.bind(window) as unknown as typeof getComputedStyle;
   globalThis.localStorage = window.localStorage as unknown as Storage;
   globalThis.sessionStorage = window.sessionStorage as unknown as Storage;
   Object.defineProperty(globalThis, 'navigator', {
