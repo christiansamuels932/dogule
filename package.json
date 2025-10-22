@@ -18,7 +18,8 @@
     "format": "prettier --write .",
     "spec:check": "npm run spec:check -w apps/server",
     "typecheck": "npm run typecheck -w apps/server",
-    "e2e:web": "npm run e2e -w apps/web"
+    "e2e:web": "npm run e2e -w apps/web",
+    "prealpha:smoke": "npm run prealpha:smoke -w apps/web"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

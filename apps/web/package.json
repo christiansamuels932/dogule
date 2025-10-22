@@ -9,7 +9,8 @@
     "preview": "vite preview || echo ERR_WEB_PREVIEW_001",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --reporter=dot",
-    "e2e": "npx playwright test"
+    "e2e": "npx playwright test",
+    "prealpha:smoke": "npx playwright test --config e2e/playwright.prealpha.config.ts"
   },
   "dependencies": {
     "@dogule/domain": "workspace:*",
