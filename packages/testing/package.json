@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "test": "echo 'No tests for @dogule/testing'"
+  },
   "exports": {
     "./package.json": "./package.json",
     ".": {

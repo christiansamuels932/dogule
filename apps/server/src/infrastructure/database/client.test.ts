@@ -35,14 +35,18 @@ class MockPool {
   async query(text: string, params?: ReadonlyArray<unknown>) {
     this.queries.push({ text, params });
 
+    const next = mockPoolState.nextResults.shift();
+    if (next) {
+      return next;
+    }
+
     if (mockPoolState.nextError) {
       const error = mockPoolState.nextError;
       mockPoolState.nextError = undefined;
       throw error;
     }
 
-    const next = mockPoolState.nextResults.shift();
-    return next ?? { rows: [] };
+    return { rows: [] };
   }
 
   async end(): Promise<void> {

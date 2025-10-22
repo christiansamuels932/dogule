@@ -5,6 +5,8 @@ export type ConsoleSpy = {
   restore: () => void;
 };
 
+export { installMiniDom } from './test-dom';
+
 export const createConsoleSpy = (): ConsoleSpy => {
   const originalLog = console.log;
   const originalWarn = console.warn;
