@@ -3,11 +3,11 @@ import {
   CustomerCreateInput,
   DogCreateInput,
   CourseCreateInput,
+  ErrorCode,
   FinanzCreateInput,
-  CalendarEventCreateInput,
-  KommunikationCreateInput,
-  KommunikationUpdateInput,
-  KommunikationListFilters,
+  KalenderEventCreateInput,
+  KalenderEventUpdateInput,
+  MessageCreateInput,
 } from '@dogule/domain';
 import { KundenService } from '../features/kunden/service';
 import { HundeService } from '../features/hunde/service';
@@ -15,6 +15,11 @@ import { KurseService } from '../features/kurse/service';
 import { kursCreateSchema } from '../features/kurse/schemas';
 import { FinanzenService } from '../features/finanzen/service';
 import { KalenderService } from '../features/kalender/service';
+import {
+  parseKalenderCreateInput,
+  parseKalenderListFilters,
+  parseKalenderUpdateInput,
+} from '../features/kalender/schemas';
 import { KommunikationService } from '../features/kommunikation/service';
 
 const kundenService = new KundenService();
@@ -109,21 +114,38 @@ export const typeDefs = gql`
 
   type KalenderEvent {
     id: ID!
-    title: String!
-    description: String
-    start: String!
-    end: String!
-    relatedCourseId: String
-    relatedDogId: String
+    createdAt: String!
+    updatedAt: String!
+    titel: String!
+    beschreibung: String
+    startAt: String!
+    endAt: String!
+    ort: String
+    kundeId: String
+    hundId: String
+    status: String!
   }
 
-  input KalenderEventInput {
-    title: String!
-    description: String
-    start: String!
-    end: String!
-    relatedCourseId: String
-    relatedDogId: String
+  input KalenderEventCreateInput {
+    titel: String!
+    beschreibung: String
+    startAt: String!
+    endAt: String!
+    ort: String
+    kundeId: String
+    hundId: String
+    status: String
+  }
+
+  input KalenderEventUpdateInput {
+    titel: String
+    beschreibung: String
+    startAt: String
+    endAt: String
+    ort: String
+    kundeId: String
+    hundId: String
+    status: String
   }
 
   type Nachricht {
@@ -178,8 +200,8 @@ export const typeDefs = gql`
     hunde: [Hund!]!
     kurse: [Kurs!]!
     finanzen(from: String, to: String, typ: String): [Finanz!]!
-    kalender: [KalenderEvent!]!
-    nachrichten(filters: NachrichtFilterInput): NachrichtList!
+    events(from: String, to: String, kunde_id: String, hund_id: String): [KalenderEvent!]!
+    nachrichten: [Nachricht!]!
   }
 
   type Mutation {
@@ -187,7 +209,9 @@ export const typeDefs = gql`
     createHund(input: HundInput!): Hund!
     createKurs(input: KursInput!): Kurs!
     createFinanz(input: FinanzInput!): Finanz!
-    createKalenderEvent(input: KalenderEventInput!): KalenderEvent!
+    createEvent(input: KalenderEventCreateInput!): KalenderEvent!
+    updateEvent(id: ID!, input: KalenderEventUpdateInput!): KalenderEvent!
+    deleteEvent(id: ID!): Boolean!
     createNachricht(input: NachrichtInput!): Nachricht!
     updateNachricht(id: ID!, input: NachrichtUpdateInput!): Nachricht!
     deleteNachricht(id: ID!): Boolean!
@@ -223,55 +247,20 @@ export const resolvers = {
 
       return finanzenService.list(filters).then((result) => result.data);
     },
-    kalender: () => kalenderService.list().then((result) => result.data),
-    nachrichten: (
+    events: (
       _: unknown,
-      args: {
-        filters?: {
-          kundeId?: string;
-          hundId?: string;
-          kanal?: string;
-          from?: string;
-          to?: string;
-          limit?: number;
-          offset?: number;
-        };
-      },
+      args: { from?: string; to?: string; kunde_id?: string; hund_id?: string },
     ) => {
-      const filters: KommunikationListFilters = {};
+      const filters = parseKalenderListFilters({
+        from: args.from,
+        to: args.to,
+        kunde_id: args.kunde_id,
+        hund_id: args.hund_id,
+      });
 
-      if (args.filters) {
-        if (args.filters.kundeId) {
-          filters.kundeId = args.filters.kundeId;
-        }
-
-        if (args.filters.hundId) {
-          filters.hundId = args.filters.hundId;
-        }
-
-        if (args.filters.kanal) {
-          filters.kanal = args.filters.kanal;
-        }
-
-        if (args.filters.from) {
-          filters.from = args.filters.from;
-        }
-
-        if (args.filters.to) {
-          filters.to = args.filters.to;
-        }
-
-        if (typeof args.filters.limit === 'number') {
-          filters.limit = args.filters.limit;
-        }
-
-        if (typeof args.filters.offset === 'number') {
-          filters.offset = args.filters.offset;
-        }
-      }
-
-      return kommunikationService.list(filters);
+      return kalenderService.list(filters).then((result) => result.data);
     },
+    nachrichten: () => kommunikationService.list().then((result) => result.data),
   },
   Mutation: {
     createKunde: (_: unknown, { input }: { input: CustomerCreateInput }) => kundenService.create(input),
@@ -279,9 +268,45 @@ export const resolvers = {
     createKurs: (_: unknown, { input }: { input: CourseCreateInput }) => kurseService.create(input),
     createFinanz: (_: unknown, { input }: { input: FinanzCreateInput }) =>
       finanzenService.create(input),
-    createKalenderEvent: (_: unknown, { input }: { input: CalendarEventCreateInput }) =>
-      kalenderService.create(input),
-    createNachricht: (_: unknown, { input }: { input: KommunikationCreateInput }) =>
+    createEvent: (_: unknown, { input }: { input: KalenderEventCreateInput }) =>
+      kalenderService.create(
+        parseKalenderCreateInput({
+          titel: input.titel,
+          start_at: input.startAt,
+          end_at: input.endAt,
+          ort: input.ort,
+          beschreibung: input.beschreibung,
+          kunde_id: input.kundeId,
+          hund_id: input.hundId,
+          status: input.status,
+        }),
+      ),
+    updateEvent: async (
+      _: unknown,
+      { id, input }: { id: string; input: KalenderEventUpdateInput },
+    ) => {
+      const event = await kalenderService.update(
+        id,
+        parseKalenderUpdateInput({
+          titel: input.titel,
+          start_at: input.startAt,
+          end_at: input.endAt,
+          ort: input.ort,
+          beschreibung: input.beschreibung,
+          kunde_id: input.kundeId,
+          hund_id: input.hundId,
+          status: input.status,
+        }),
+      );
+
+      if (!event) {
+        throw new Error(ErrorCode.ERR_KALENDER_READ_001);
+      }
+
+      return event;
+    },
+    deleteEvent: (_: unknown, { id }: { id: string }) => kalenderService.delete(id),
+    createNachricht: (_: unknown, { input }: { input: MessageCreateInput }) =>
       kommunikationService.create(input),
     updateNachricht: (
       _: unknown,

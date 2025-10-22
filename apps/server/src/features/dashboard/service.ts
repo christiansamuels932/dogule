@@ -1,17 +1,17 @@
-import { logError } from '@dogule/utils';
-
 import { ErrorCode, type DashboardSummary } from '@dogule/domain';
 import { getDatabaseClient } from '../../infrastructure';
 import type { DatabaseClient } from '../../infrastructure';
 import { KundenRepository } from '../kunden/repository';
 import { HundeRepository } from '../hunde/repository';
 import { FinanzenRepository } from '../finanzen/repository';
-import { KommunikationRepository } from '../kommunikation/repository';
+import { KalenderRepository } from '../kalender/repository';
+import { logError } from '@dogule/utils';
 
 const SUMMARY_QUERIES: Record<'kurseCount' | 'finanzenCount' | 'kalenderCount', string> = {
   kurseCount: 'SELECT COUNT(*)::int AS count FROM kurse',
   finanzenCount: 'SELECT COUNT(*)::int AS count FROM finanzen',
-  kalenderCount: 'SELECT COUNT(*)::int AS count FROM kalender',
+  kalenderCount: 'SELECT COUNT(*)::int AS count FROM kalender_events',
+  kommunikationCount: 'SELECT COUNT(*)::int AS count FROM kommunikation',
 };
 
 type Database = Pick<DatabaseClient, 'query'>;
@@ -25,6 +25,7 @@ const createEmptySummary = (): DashboardSummary => ({
   finanzenAusgaben: 0,
   kalenderCount: 0,
   kommunikationCount: 0,
+  eventsUpcoming7d: 0,
 });
 
 export class DashboardService {
@@ -33,7 +34,7 @@ export class DashboardService {
     private readonly kundenRepository = new KundenRepository(),
     private readonly hundeRepository = new HundeRepository(),
     private readonly finanzenRepository = new FinanzenRepository(),
-    private readonly kommunikationRepository = new KommunikationRepository(),
+    private readonly kalenderRepository = new KalenderRepository(),
   ) {}
 
   async getSummary(): Promise<DashboardSummary> {
@@ -88,6 +89,18 @@ export class DashboardService {
       logError('ERR_DASHBOARD_001', error);
       summary.finanzenEinnahmen = 0;
       summary.finanzenAusgaben = 0;
+    }
+
+    try {
+      const rangeStart = now.toISOString();
+      const rangeEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      summary.eventsUpcoming7d = await this.kalenderRepository.count({
+        from: rangeStart,
+        to: rangeEnd,
+      });
+    } catch (error) {
+      logError(ErrorCode.ERR_DASHBOARD_001, error);
+      summary.eventsUpcoming7d = 0;
     }
 
     return summary;
