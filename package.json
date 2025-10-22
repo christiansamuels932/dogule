@@ -15,7 +15,9 @@
     "build": "npm run build -w apps/web && npm run build -w apps/server || echo ERR_BUILD_001",
     "test": "npm run test -ws || echo ERR_TEST_001",
     "lint": "eslint . --ext .ts,.tsx",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "spec:check": "npm run spec:check -w apps/server",
+    "typecheck": "npm run typecheck -w apps/server"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

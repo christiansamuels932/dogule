@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CustomerCreateInput } from '../../../../../packages/domain';
+import { CustomerCreateInput } from '@dogule/domain';
 
 export const kundenCreateSchema = z.object({
   firstName: z.string().min(1),

@@ -2,7 +2,9 @@ import { randomUUID } from 'crypto';
 
 import { Pool, QueryResult } from 'pg';
 import { IMemoryDb, newDb } from 'pg-mem';
+import type { DataType } from 'pg-mem';
 
+import { ErrorCode, LogCode } from '@dogule/domain';
 import { logError, logInfo, logWarn } from '@dogule/utils';
 
 export interface QueryOptions {
@@ -35,53 +37,53 @@ export class DatabaseClient {
 
     if (this.mode === 'postgres') {
       if (!this.url) {
-        logError('ERR_DB_CONFIG_001 mode=postgres requires url');
-        throw new Error('ERR_DB_CONFIG_001');
+        logError(ErrorCode.ERR_DB_CONFIG_001, 'mode=postgres requires url');
+        throw new Error(ErrorCode.ERR_DB_CONFIG_001);
       }
 
       try {
         this.pool = new Pool({ connectionString: this.url });
       } catch (error) {
-        logError('ERR_DB_CONNECT_001', error);
-        throw new Error('ERR_DB_CONNECT_001');
+        logError(ErrorCode.ERR_DB_CONNECT_001, error);
+        throw new Error(ErrorCode.ERR_DB_CONNECT_001);
       }
 
       try {
         await this.pool.query('SELECT 1');
       } catch (error) {
-        logError('ERR_DB_LIVENESS_001', error);
+        logError(ErrorCode.ERR_DB_LIVENESS_001, error);
         await this.pool.end().catch(() => undefined);
         this.pool = undefined;
-        throw new Error('ERR_DB_LIVENESS_001');
+        throw new Error(ErrorCode.ERR_DB_LIVENESS_001);
       }
 
-      logInfo('LOG_DB_READY_001', this.url);
+      logInfo(LogCode.LOG_DB_READY_001, this.url);
     } else {
       try {
         this.memoryDb = newDb();
         this.memoryDb.public.registerFunction({
           name: 'gen_random_uuid',
-          returns: 'uuid',
+          returns: 'uuid' as unknown as DataType,
           implementation: () => randomUUID(),
           impure: true,
         });
         const { Pool: MemoryPool } = this.memoryDb.adapters.createPg();
         this.pool = new MemoryPool() as unknown as Pool;
       } catch (error) {
-        logError('ERR_DB_CONNECT_001', error);
-        throw new Error('ERR_DB_CONNECT_001');
+        logError(ErrorCode.ERR_DB_CONNECT_001, error);
+        throw new Error(ErrorCode.ERR_DB_CONNECT_001);
       }
 
       try {
         await this.pool.query('SELECT 1');
       } catch (error) {
-        logError('ERR_DB_LIVENESS_001', error);
+        logError(ErrorCode.ERR_DB_LIVENESS_001, error);
         this.pool = undefined;
         this.memoryDb = undefined;
-        throw new Error('ERR_DB_LIVENESS_001');
+        throw new Error(ErrorCode.ERR_DB_LIVENESS_001);
       }
 
-      logInfo('LOG_DB_READY_002');
+      logInfo(LogCode.LOG_DB_READY_002);
     }
 
     await this.bootstrapSchema(this.pool);
@@ -171,10 +173,10 @@ export class DatabaseClient {
         await pool.query(statement);
       }
       this.bootstrapped = true;
-      logInfo('LOG_DB_BOOTSTRAP_001');
+      logInfo(LogCode.LOG_DB_BOOTSTRAP_001);
     } catch (error) {
-      logError('ERR_DB_BOOTSTRAP_001', error);
-      throw new Error('ERR_DB_BOOTSTRAP_001');
+      logError(ErrorCode.ERR_DB_BOOTSTRAP_001, error);
+      throw new Error(ErrorCode.ERR_DB_BOOTSTRAP_001);
     }
   }
 }

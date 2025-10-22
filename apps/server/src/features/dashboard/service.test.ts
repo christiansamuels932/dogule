@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { ErrorCode } from '@dogule/domain';
+
 import { DashboardService } from './service';
 
 describe('DashboardService', () => {
@@ -21,7 +23,7 @@ describe('DashboardService', () => {
       kommunikationCount: 0,
     });
     expect(database.query).toHaveBeenCalled();
-    expect(consoleSpy).toHaveBeenCalledWith('ERR_DASHBOARD_001', expect.any(Error));
+    expect(consoleSpy).toHaveBeenCalledWith(ErrorCode.ERR_DASHBOARD_001, expect.any(Error));
 
     consoleSpy.mockRestore();
   });

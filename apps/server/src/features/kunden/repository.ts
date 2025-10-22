@@ -1,4 +1,6 @@
-import { Customer, CustomerCreateInput } from '../../../../../packages/domain';
+import { logError, logInfo } from '@dogule/utils';
+
+import { Customer, CustomerCreateInput, ErrorCode, LogCode } from '@dogule/domain';
 import { getDatabaseClient } from '../../infrastructure';
 import type { DatabaseClient } from '../../infrastructure';
 
@@ -30,11 +32,11 @@ export class KundenRepository {
       });
 
       const customer = this.mapRow(rows[0]);
-      console.info('LOG_KUNDEN_CREATE_001', customer.id);
+      logInfo(LogCode.LOG_KUNDEN_CREATE_001, customer.id);
       return customer;
     } catch (error) {
-      console.error('ERR_KUNDEN_CREATE_001', error);
-      throw new Error('ERR_KUNDEN_CREATE_001');
+      logError(ErrorCode.ERR_KUNDEN_CREATE_001, error);
+      throw new Error(ErrorCode.ERR_KUNDEN_CREATE_001);
     }
   }
 
@@ -52,8 +54,8 @@ export class KundenRepository {
       const row = rows[0];
       return row ? this.mapRow(row) : undefined;
     } catch (error) {
-      console.error('ERR_KUNDEN_READ_001', error);
-      throw new Error('ERR_KUNDEN_READ_001');
+      logError(ErrorCode.ERR_KUNDEN_READ_001, error);
+      throw new Error(ErrorCode.ERR_KUNDEN_READ_001);
     }
   }
 
@@ -71,8 +73,8 @@ export class KundenRepository {
 
       return rows.map((row) => this.mapRow(row));
     } catch (error) {
-      console.error('ERR_KUNDEN_READ_001', error);
-      throw new Error('ERR_KUNDEN_READ_001');
+      logError(ErrorCode.ERR_KUNDEN_READ_001, error);
+      throw new Error(ErrorCode.ERR_KUNDEN_READ_001);
     }
   }
 
@@ -127,11 +129,11 @@ export class KundenRepository {
       }
 
       const customer = this.mapRow(row);
-      console.info('LOG_KUNDEN_UPDATE_001', customer.id);
+      logInfo(LogCode.LOG_KUNDEN_UPDATE_001, customer.id);
       return customer;
     } catch (error) {
-      console.error('ERR_KUNDEN_UPDATE_001', error);
-      throw new Error('ERR_KUNDEN_UPDATE_001');
+      logError(ErrorCode.ERR_KUNDEN_UPDATE_001, error);
+      throw new Error(ErrorCode.ERR_KUNDEN_UPDATE_001);
     }
   }
 
@@ -148,13 +150,13 @@ export class KundenRepository {
 
       const deleted = rows.length > 0;
       if (deleted) {
-        console.info('LOG_KUNDEN_DELETE_001', id);
+        logInfo(LogCode.LOG_KUNDEN_DELETE_001, id);
       }
 
       return deleted;
     } catch (error) {
-      console.error('ERR_KUNDEN_DELETE_001', error);
-      throw new Error('ERR_KUNDEN_DELETE_001');
+      logError(ErrorCode.ERR_KUNDEN_DELETE_001, error);
+      throw new Error(ErrorCode.ERR_KUNDEN_DELETE_001);
     }
   }
 
@@ -166,8 +168,8 @@ export class KundenRepository {
 
       return rows[0]?.count ?? 0;
     } catch (error) {
-      console.error('ERR_KUNDEN_READ_001', error);
-      throw new Error('ERR_KUNDEN_READ_001');
+      logError(ErrorCode.ERR_KUNDEN_READ_001, error);
+      throw new Error(ErrorCode.ERR_KUNDEN_READ_001);
     }
   }
 

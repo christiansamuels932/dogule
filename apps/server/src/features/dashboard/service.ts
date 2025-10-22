@@ -1,4 +1,6 @@
-import type { DashboardSummary } from '../../../../../packages/domain';
+import { logError } from '@dogule/utils';
+
+import { ErrorCode, type DashboardSummary } from '@dogule/domain';
 import { getDatabaseClient } from '../../infrastructure';
 import type { DatabaseClient } from '../../infrastructure';
 import { KundenRepository } from '../kunden/repository';
@@ -35,14 +37,14 @@ export class DashboardService {
     try {
       summary.kundenCount = await this.kundenRepository.count();
     } catch (error) {
-      console.error('ERR_DASHBOARD_001', error);
+      logError(ErrorCode.ERR_DASHBOARD_001, error);
       summary.kundenCount = 0;
     }
 
     try {
       summary.hundeCount = await this.hundeRepository.count();
     } catch (error) {
-      console.error('ERR_DASHBOARD_001', error);
+      logError(ErrorCode.ERR_DASHBOARD_001, error);
       summary.hundeCount = 0;
     }
 
@@ -53,7 +55,7 @@ export class DashboardService {
         const rows = await this.database.query<{ count: number }>({ text: query });
         summary[key] = rows[0]?.count ?? 0;
       } catch (error) {
-        logError('ERR_DASHBOARD_001', error);
+        logError(ErrorCode.ERR_DASHBOARD_001, error);
         summary[key] = 0;
       }
     }

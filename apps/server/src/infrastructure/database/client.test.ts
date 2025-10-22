@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ErrorCode, LogCode } from '@dogule/domain';
+
 type QueryRecord = { text: string; params?: ReadonlyArray<unknown> };
 
 interface MockPoolState {
@@ -115,8 +117,8 @@ describe('DatabaseClient ensurePool', () => {
     const result = await client.query<{ value: number }>({ text: 'SELECT 1 AS value' });
     expect(result).toEqual([{ value: 1 }]);
 
-    expect(infoSpy).toHaveBeenCalledWith('LOG_DB_READY_002');
-    expect(infoSpy).toHaveBeenCalledWith('LOG_DB_BOOTSTRAP_001');
+    expect(infoSpy).toHaveBeenCalledWith(LogCode.LOG_DB_READY_002);
+    expect(infoSpy).toHaveBeenCalledWith(LogCode.LOG_DB_BOOTSTRAP_001);
   });
 
   it('connects to postgres when DATABASE_URL is provided and bootstraps schema once', async () => {
@@ -147,15 +149,18 @@ describe('DatabaseClient ensurePool', () => {
     expect(instance.queries[0]?.text).toBe('SELECT 1');
     expect(instance.queries.some((query) => query.text.includes('CREATE TABLE IF NOT EXISTS users'))).toBe(true);
 
-    expect(infoSpy).toHaveBeenCalledWith('LOG_DB_READY_001', 'postgres://postgres:postgres@localhost:5432/dogule');
-    expect(infoSpy).toHaveBeenCalledWith('LOG_DB_BOOTSTRAP_001');
+    expect(infoSpy).toHaveBeenCalledWith(
+      LogCode.LOG_DB_READY_001,
+      'postgres://postgres:postgres@localhost:5432/dogule',
+    );
+    expect(infoSpy).toHaveBeenCalledWith(LogCode.LOG_DB_BOOTSTRAP_001);
   });
 
   it('throws ERR_DB_CONFIG_001 when postgres mode is missing url', async () => {
     const { DatabaseClient } = await import('./client');
     const client = new DatabaseClient({ mode: 'postgres', url: '' });
 
-    await expect(client.connect()).rejects.toThrowError('ERR_DB_CONFIG_001');
+    await expect(client.connect()).rejects.toThrowError(ErrorCode.ERR_DB_CONFIG_001);
   });
 
   it('surfaces bootstrap failures with ERR_DB_BOOTSTRAP_001', async () => {
@@ -171,9 +176,9 @@ describe('DatabaseClient ensurePool', () => {
 
     const client = createDatabaseClient();
 
-    await expect(client.connect()).rejects.toThrowError('ERR_DB_BOOTSTRAP_001');
+    await expect(client.connect()).rejects.toThrowError(ErrorCode.ERR_DB_BOOTSTRAP_001);
     expect(client.bootstrapped).toBe(false);
-    expect(errorSpy).toHaveBeenCalledWith('ERR_DB_BOOTSTRAP_001', expect.any(Error));
+    expect(errorSpy).toHaveBeenCalledWith(ErrorCode.ERR_DB_BOOTSTRAP_001, expect.any(Error));
   });
 
   it('wraps connection failures with ERR_DB_CONNECT_001', async () => {
@@ -188,8 +193,8 @@ describe('DatabaseClient ensurePool', () => {
 
     const client = createDatabaseClient();
 
-    await expect(client.connect()).rejects.toThrowError('ERR_DB_CONNECT_001');
-    expect(errorSpy).toHaveBeenCalledWith('ERR_DB_CONNECT_001', expect.any(Error));
+    await expect(client.connect()).rejects.toThrowError(ErrorCode.ERR_DB_CONNECT_001);
+    expect(errorSpy).toHaveBeenCalledWith(ErrorCode.ERR_DB_CONNECT_001, expect.any(Error));
   });
 
   it('wraps liveness failures with ERR_DB_LIVENESS_001', async () => {
@@ -204,8 +209,8 @@ describe('DatabaseClient ensurePool', () => {
 
     const client = createDatabaseClient();
 
-    await expect(client.connect()).rejects.toThrowError('ERR_DB_LIVENESS_001');
+    await expect(client.connect()).rejects.toThrowError(ErrorCode.ERR_DB_LIVENESS_001);
     expect(client.pool).toBeUndefined();
-    expect(errorSpy).toHaveBeenCalledWith('ERR_DB_LIVENESS_001', expect.any(Error));
+    expect(errorSpy).toHaveBeenCalledWith(ErrorCode.ERR_DB_LIVENESS_001, expect.any(Error));
   });
 });

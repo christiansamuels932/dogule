@@ -1,4 +1,4 @@
-import { FinancialRecordCreateInput } from '../../../../../packages/domain';
+import { FinancialRecordCreateInput } from '@dogule/domain';
 
 const isString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
 const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);

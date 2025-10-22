@@ -1,4 +1,4 @@
-import { Message, MessageCreateInput, PaginatedResult, PaginationQuery } from '../../../../../packages/domain';
+import { Message, MessageCreateInput, PaginatedResult, PaginationQuery } from '@dogule/domain';
 
 let sequence = 0;
 const generateId = () => {

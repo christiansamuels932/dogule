@@ -1,6 +1,8 @@
 import request, { SuperTest, Test } from 'supertest';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ErrorCode } from '@dogule/domain';
+
 let createApp: typeof import('../../../index').createApp;
 let getDatabaseClient: typeof import('../../../infrastructure').getDatabaseClient;
 let DashboardService: typeof import('../../dashboard/service').DashboardService;
@@ -175,9 +177,9 @@ describe('kunden integration', () => {
         lastName: 'Error',
         email: 'erin.error@example.com',
       }),
-    ).rejects.toThrowError('ERR_KUNDEN_CREATE_001');
+    ).rejects.toThrowError(ErrorCode.ERR_KUNDEN_CREATE_001);
 
-    expect(errorSpy).toHaveBeenCalledWith('ERR_KUNDEN_CREATE_001', expect.any(Error));
+    expect(errorSpy).toHaveBeenCalledWith(ErrorCode.ERR_KUNDEN_CREATE_001, expect.any(Error));
     errorSpy.mockRestore();
   });
 });

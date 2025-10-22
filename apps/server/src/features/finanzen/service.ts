@@ -3,7 +3,7 @@ import {
   FinancialRecordCreateInput,
   PaginatedResult,
   PaginationQuery,
-} from '../../../../../packages/domain';
+} from '@dogule/domain';
 import { FinanzenRepository } from './repository';
 
 export class FinanzenService {

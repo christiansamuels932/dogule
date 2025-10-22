@@ -1,9 +1,4 @@
-import {
-  Customer,
-  CustomerCreateInput,
-  PaginatedResult,
-  PaginationQuery,
-} from '../../../../../packages/domain';
+import { Customer, CustomerCreateInput, PaginatedResult, PaginationQuery } from '@dogule/domain';
 import { KundenRepository } from './repository';
 
 const DEFAULT_PAGE_SIZE = 50;
