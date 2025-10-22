@@ -18,6 +18,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Validate OpenAPI specification
+        run: npm run spec:check
+
       - name: Build workspace
         run: npm run build -ws
 
