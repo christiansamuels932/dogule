@@ -6,7 +6,6 @@ import type { DatabaseClient } from '../../infrastructure';
 import { KundenRepository } from '../kunden/repository';
 import { HundeRepository } from '../hunde/repository';
 import { FinanzenRepository } from '../finanzen/repository';
-import { logError } from '@dogule/utils';
 
 const SUMMARY_QUERIES: Record<
   'kurseCount' | 'finanzenCount' | 'kalenderCount' | 'kommunikationCount',
@@ -81,7 +80,7 @@ export class DashboardService {
       summary.finanzenEinnahmen = einnahmen;
       summary.finanzenAusgaben = ausgaben;
     } catch (error) {
-      logError('ERR_DASHBOARD_001', error);
+      logError(ErrorCode.ERR_DASHBOARD_001, error);
       summary.finanzenEinnahmen = 0;
       summary.finanzenAusgaben = 0;
     }

@@ -11,12 +11,18 @@ if (typeof process.stdout?.columns !== 'number' || !Number.isFinite(process.stdo
 const workspaceRoot = resolve(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 const testingIndex = resolve(workspaceRoot, 'packages/testing/src/index.ts');
 const utilsIndex = resolve(workspaceRoot, 'packages/utils/src/index.ts');
+const domainIndex = resolve(workspaceRoot, 'packages/domain/index.ts');
+const domainSrc = resolve(workspaceRoot, 'packages/domain/src');
+const rateLimitIndex = resolve(workspaceRoot, 'packages/express-rate-limit/src/index.js');
 
 export default defineConfig({
   resolve: {
     alias: {
       '@dogule/testing': testingIndex,
       '@dogule/utils': utilsIndex,
+      '@dogule/domain': domainIndex,
+      '@dogule/domain/*': `${domainSrc}/*`,
+      'express-rate-limit': rateLimitIndex,
     }
   },
   test: {
