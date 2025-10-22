@@ -1,20 +1,31 @@
 import { gql } from 'apollo-server-express';
+import { ZodError } from 'zod';
+
 import {
   CustomerCreateInput,
   DogCreateInput,
-  CourseCreateInput,
   ErrorCode,
   FinanzCreateInput,
+  FinanzListFilters,
   KalenderEventCreateInput,
   KalenderEventUpdateInput,
   KommunikationCreateInput,
+  KommunikationListFilters,
   KommunikationUpdateInput,
 } from '@dogule/domain';
+import { logError } from '@dogule/utils';
+
 import { KundenService } from '../features/kunden/service';
+import { parseCustomerCreateInput } from '../features/kunden/schemas';
 import { HundeService } from '../features/hunde/service';
+import { parseHundeCreateInput } from '../features/hunde/schemas';
 import { KurseService } from '../features/kurse/service';
-import { kursCreateSchema } from '../features/kurse/schemas';
+import { kursCreateSchema, type KursCreateInput } from '../features/kurse/schemas';
 import { FinanzenService } from '../features/finanzen/service';
+import {
+  parseFinanzCreateInput,
+  parseFinanzListFilters,
+} from '../features/finanzen/schemas';
 import { KalenderService } from '../features/kalender/service';
 import {
   parseKalenderCreateInput,
@@ -22,6 +33,11 @@ import {
   parseKalenderUpdateInput,
 } from '../features/kalender/schemas';
 import { KommunikationService } from '../features/kommunikation/service';
+import {
+  parseKommunikationCreateInput,
+  parseKommunikationListQuery,
+  parseKommunikationUpdateInput,
+} from '../features/kommunikation/schemas';
 
 const kundenService = new KundenService();
 const hundeService = new HundeService();
@@ -29,6 +45,22 @@ const kurseService = new KurseService();
 const finanzenService = new FinanzenService();
 const kalenderService = new KalenderService();
 const kommunikationService = new KommunikationService();
+
+const normalizeOptional = <T>(value: T | null | undefined): T | undefined =>
+  value === null || value === undefined ? undefined : value;
+
+const withGraphqlValidation = <T>(callback: () => T): T => {
+  try {
+    return callback();
+  } catch (error) {
+    if (error instanceof ZodError) {
+      logError(ErrorCode.ERR_GQL_VALIDATION_001, error);
+      throw new Error(ErrorCode.ERR_GQL_VALIDATION_001);
+    }
+
+    throw error;
+  }
+};
 
 export const typeDefs = gql`
   type Kunde {
@@ -202,7 +234,7 @@ export const typeDefs = gql`
     kurse: [Kurs!]!
     finanzen(from: String, to: String, typ: String): [Finanz!]!
     events(from: String, to: String, kunde_id: String, hund_id: String): [KalenderEvent!]!
-    nachrichten: [Nachricht!]!
+    nachrichten(filters: NachrichtFilterInput): NachrichtList!
   }
 
   type Mutation {
@@ -226,79 +258,207 @@ export const resolvers = {
     kurse: () => kurseService.list().then((result) => result.data),
     finanzen: (
       _: unknown,
-      args: { from?: string; to?: string; typ?: string },
+      args: { from?: string | null; to?: string | null; typ?: string | null },
     ) => {
-      const filters: { from?: string; to?: string; typ?: 'einnahme' | 'ausgabe' } = {};
-
-      if (args.from) {
-        filters.from = args.from;
-      }
-
-      if (args.to) {
-        filters.to = args.to;
-      }
-
-      if (args.typ) {
-        if (args.typ !== 'einnahme' && args.typ !== 'ausgabe') {
-          throw new Error('Invalid typ parameter');
-        }
-
-        filters.typ = args.typ;
-      }
+      const filters: FinanzListFilters = withGraphqlValidation(() =>
+        parseFinanzListFilters({
+          from: normalizeOptional(args.from),
+          to: normalizeOptional(args.to),
+          typ: normalizeOptional(args.typ),
+        }),
+      );
 
       return finanzenService.list(filters).then((result) => result.data);
     },
     events: (
       _: unknown,
-      args: { from?: string; to?: string; kunde_id?: string; hund_id?: string },
+      args: {
+        from?: string | null;
+        to?: string | null;
+        kunde_id?: string | null;
+        hund_id?: string | null;
+      },
     ) => {
-      const filters = parseKalenderListFilters({
-        from: args.from,
-        to: args.to,
-        kunde_id: args.kunde_id,
-        hund_id: args.hund_id,
-      });
+      const filters = withGraphqlValidation(() =>
+        parseKalenderListFilters({
+          from: normalizeOptional(args.from),
+          to: normalizeOptional(args.to),
+          kunde_id: normalizeOptional(args.kunde_id),
+          hund_id: normalizeOptional(args.hund_id),
+        }),
+      );
 
       return kalenderService.list(filters).then((result) => result.data);
     },
-    nachrichten: () => kommunikationService.list().then((result) => result.data),
+    nachrichten: (
+      _: unknown,
+      args: {
+        filters?: {
+          kundeId?: string | null;
+          hundId?: string | null;
+          kanal?: string | null;
+          from?: string | null;
+          to?: string | null;
+          limit?: number | null;
+          offset?: number | null;
+        };
+      },
+    ) => {
+      const parsedFilters: KommunikationListFilters | undefined = args.filters
+        ? withGraphqlValidation(() =>
+            parseKommunikationListQuery({
+              kunde_id: normalizeOptional(args.filters?.kundeId),
+              hund_id: normalizeOptional(args.filters?.hundId),
+              kanal: normalizeOptional(args.filters?.kanal),
+              from: normalizeOptional(args.filters?.from),
+              to: normalizeOptional(args.filters?.to),
+              limit: normalizeOptional(args.filters?.limit),
+              offset: normalizeOptional(args.filters?.offset),
+            }),
+          )
+        : undefined;
+
+      return kommunikationService.list(parsedFilters ?? {});
+    },
   },
   Mutation: {
-    createKunde: (_: unknown, { input }: { input: CustomerCreateInput }) => kundenService.create(input),
-    createHund: (_: unknown, { input }: { input: DogCreateInput }) => hundeService.create(input),
-    createKurs: (_: unknown, { input }: { input: CourseCreateInput }) => kurseService.create(input),
-    createFinanz: (_: unknown, { input }: { input: FinanzCreateInput }) =>
-      finanzenService.create(input),
-    createEvent: (_: unknown, { input }: { input: KalenderEventCreateInput }) =>
-      kalenderService.create(
-        parseKalenderCreateInput({
+    createKunde: (
+      _: unknown,
+      { input }: { input: CustomerCreateInput & { phone?: string | null } },
+    ) =>
+      kundenService.create(
+        withGraphqlValidation(() =>
+          parseCustomerCreateInput({
+            firstName: input.firstName,
+            lastName: input.lastName,
+            email: input.email,
+            phone: normalizeOptional(input.phone),
+          }),
+        ),
+      ),
+    createHund: (
+      _: unknown,
+      {
+        input,
+      }: {
+        input: DogCreateInput & {
+          geburtsdatum?: string | null;
+          rasse?: string | null;
+          notizen?: string | null;
+        };
+      },
+    ) =>
+      hundeService.create(
+        withGraphqlValidation(() =>
+          parseHundeCreateInput({
+            kunde_id: input.kundeId,
+            name: input.name,
+            geburtsdatum: normalizeOptional(input.geburtsdatum),
+            rasse: normalizeOptional(input.rasse),
+            notizen: normalizeOptional(input.notizen),
+          }),
+        ),
+      ),
+    createKurs: (
+      _: unknown,
+      {
+        input,
+      }: {
+        input: KursCreateInput & {
+          beschreibung?: string | null;
+          end_datum?: string | null;
+          ort?: string | null;
+          preis_cents?: number | null;
+          max_teilnehmer?: number | null;
+          status?: string | null;
+        };
+      },
+    ) => {
+      const payload: KursCreateInput = withGraphqlValidation(() =>
+        kursCreateSchema.parse({
           titel: input.titel,
-          start_at: input.startAt,
-          end_at: input.endAt,
-          ort: input.ort,
-          beschreibung: input.beschreibung,
-          kunde_id: input.kundeId,
-          hund_id: input.hundId,
-          status: input.status,
+          beschreibung: normalizeOptional(input.beschreibung),
+          start_datum: input.start_datum,
+          end_datum: normalizeOptional(input.end_datum),
+          ort: normalizeOptional(input.ort),
+          preis_cents: normalizeOptional(input.preis_cents),
+          max_teilnehmer: normalizeOptional(input.max_teilnehmer),
+          status: normalizeOptional(input.status),
         }),
+      );
+
+      return kurseService.create(payload);
+    },
+    createFinanz: (
+      _: unknown,
+      {
+        input,
+      }: {
+        input: FinanzCreateInput & {
+          kategorie?: string | null;
+          beschreibung?: string | null;
+          referenz?: string | null;
+        };
+      },
+    ) =>
+      finanzenService.create(
+        withGraphqlValidation(() =>
+          parseFinanzCreateInput({
+            datum: input.datum,
+            typ: input.typ,
+            betrag_cents: input.betragCents,
+            kategorie: normalizeOptional(input.kategorie),
+            beschreibung: normalizeOptional(input.beschreibung),
+            referenz: normalizeOptional(input.referenz),
+          }),
+        ),
+      ),
+    createEvent: (
+      _: unknown,
+      {
+        input,
+      }: {
+        input: KalenderEventCreateInput & {
+          beschreibung?: string | null;
+          ort?: string | null;
+          kundeId?: string | null;
+          hundId?: string | null;
+          status?: string | null;
+        };
+      },
+    ) =>
+      kalenderService.create(
+        withGraphqlValidation(() =>
+          parseKalenderCreateInput({
+            titel: input.titel,
+            start_at: input.startAt,
+            end_at: input.endAt,
+            ort: normalizeOptional(input.ort),
+            beschreibung: normalizeOptional(input.beschreibung),
+            kunde_id: normalizeOptional(input.kundeId),
+            hund_id: normalizeOptional(input.hundId),
+            status: normalizeOptional(input.status),
+          }),
+        ),
       ),
     updateEvent: async (
       _: unknown,
       { id, input }: { id: string; input: KalenderEventUpdateInput },
     ) => {
-      const event = await kalenderService.update(
-        id,
+      const payload = withGraphqlValidation(() =>
         parseKalenderUpdateInput({
           titel: input.titel,
-          start_at: input.startAt,
-          end_at: input.endAt,
-          ort: input.ort,
-          beschreibung: input.beschreibung,
-          kunde_id: input.kundeId,
-          hund_id: input.hundId,
-          status: input.status,
+          start_at: normalizeOptional(input.startAt),
+          end_at: normalizeOptional(input.endAt),
+          ort: normalizeOptional(input.ort),
+          beschreibung: normalizeOptional(input.beschreibung),
+          kunde_id: normalizeOptional(input.kundeId),
+          hund_id: normalizeOptional(input.hundId),
+          status: normalizeOptional(input.status),
         }),
       );
+
+      const event = await kalenderService.update(id, payload);
 
       if (!event) {
         throw new Error(ErrorCode.ERR_KALENDER_READ_001);
@@ -307,19 +467,54 @@ export const resolvers = {
       return event;
     },
     deleteEvent: (_: unknown, { id }: { id: string }) => kalenderService.delete(id),
-    createNachricht: (_: unknown, { input }: { input: KommunikationCreateInput }) =>
-      kommunikationService.create(input),
+    createNachricht: (
+      _: unknown,
+      {
+        input,
+      }: {
+        input: KommunikationCreateInput & {
+          kundeId?: string | null;
+          hundId?: string | null;
+        };
+      },
+    ) =>
+      kommunikationService.create(
+        withGraphqlValidation(() =>
+          parseKommunikationCreateInput({
+            kanal: input.kanal,
+            richtung: input.richtung,
+            betreff: input.betreff,
+            inhalt: input.inhalt,
+            kunde_id: normalizeOptional(input.kundeId),
+            hund_id: normalizeOptional(input.hundId),
+          }),
+        ),
+      ),
     updateNachricht: (
       _: unknown,
       { id, input }: { id: string; input: KommunikationUpdateInput },
     ) =>
-      kommunikationService.update(id, input).then((result) => {
-        if (!result) {
-          throw new Error('Kommunikationseintrag nicht gefunden');
-        }
+      kommunikationService
+        .update(
+          id,
+          withGraphqlValidation(() =>
+            parseKommunikationUpdateInput({
+              kanal: normalizeOptional(input.kanal),
+              richtung: normalizeOptional(input.richtung),
+              betreff: normalizeOptional(input.betreff),
+              inhalt: normalizeOptional(input.inhalt),
+              kunde_id: normalizeOptional(input.kundeId),
+              hund_id: normalizeOptional(input.hundId),
+            }),
+          ),
+        )
+        .then((result) => {
+          if (!result) {
+            throw new Error('Kommunikationseintrag nicht gefunden');
+          }
 
-        return result;
-      }),
+          return result;
+        }),
     deleteNachricht: (_: unknown, { id }: { id: string }) => kommunikationService.remove(id),
   },
 };

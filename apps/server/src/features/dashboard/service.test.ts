@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { ErrorCode } from '@dogule/domain';
+import * as utils from '@dogule/utils';
+
 import { DashboardService } from './service';
 
 describe('DashboardService', () => {
@@ -19,7 +22,7 @@ describe('DashboardService', () => {
     const kalenderRepository = {
       count: vi.fn().mockRejectedValue(new Error('kalender failed')),
     };
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const logSpy = vi.spyOn(utils, 'logError').mockImplementation(() => {});
     const service = new DashboardService(
       database as unknown as { query: typeof database.query },
       kundenRepository as unknown as { count: () => Promise<number> },

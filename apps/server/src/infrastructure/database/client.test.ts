@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { Pool } from 'pg';
+
 import { ErrorCode, LogCode } from '@dogule/domain';
 
 type QueryRecord = { text: string; params?: ReadonlyArray<unknown> };
@@ -240,7 +242,7 @@ describe('DatabaseClient ensurePool', () => {
     });
 
     const inserted = await client.query<{ id: string }>({
-      text: 'INSERT INTO test_uuid DEFAULT VALUES RETURNING id;',
+      text: 'INSERT INTO test_uuid (id) VALUES (DEFAULT) RETURNING id;',
     });
 
     expect(inserted).toHaveLength(1);
@@ -257,36 +259,28 @@ describe('DatabaseClient ensurePool', () => {
   });
 
   it('treats CREATE EXTENSION as a no-op when using pg-mem', async () => {
-    process.env.NODE_ENV = 'test';
-    delete process.env.DATABASE_URL;
+    const { DatabaseClient } = await import('./client');
 
-    const { createDatabaseClient } = await import('./client');
-
-    const client = createDatabaseClient();
-    await client.connect();
-
-    const pool = client.pool!;
-    const originalQuery = pool.query.bind(pool);
-    const querySpy = vi
-      .spyOn(pool, 'query')
-      .mockImplementation(async (text: unknown, params?: ReadonlyArray<unknown>) => {
-        if (typeof text === 'string' && text.trim().toUpperCase().startsWith('CREATE EXTENSION')) {
-          throw new Error('CREATE EXTENSION should be skipped');
-        }
-
-        return originalQuery(text as string, params);
-      });
-
+    const client = new DatabaseClient({ mode: 'memory' });
     client.bootstrapped = false;
+
+    const statements: string[] = [];
+    const fakePool = {
+      query: vi.fn(async (text: string) => {
+        statements.push(text);
+        return { rows: [] };
+      }),
+    } as unknown as Pool;
 
     await expect(
       // @ts-expect-error accessing private method for test coverage
-      client['bootstrapSchema'](pool),
+      client['bootstrapSchema'](fakePool),
     ).resolves.not.toThrow();
 
-    expect(querySpy).toHaveBeenCalled();
+    const extensionCalls = statements.filter((statement) =>
+      statement.trim().toUpperCase().startsWith('CREATE EXTENSION'),
+    );
 
-    querySpy.mockRestore();
-    await client.disconnect();
+    expect(extensionCalls).toHaveLength(0);
   });
 });
