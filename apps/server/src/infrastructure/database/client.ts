@@ -159,8 +159,18 @@ export class DatabaseClient {
           id TEXT PRIMARY KEY
         );
         CREATE TABLE IF NOT EXISTS finanzen (
-          id TEXT PRIMARY KEY
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          datum DATE NOT NULL,
+          typ TEXT NOT NULL CHECK (typ IN ('einnahme','ausgabe')),
+          betrag_cents INTEGER NOT NULL CHECK (betrag_cents >= 0),
+          kategorie TEXT,
+          beschreibung TEXT,
+          referenz TEXT
         );
+        CREATE INDEX IF NOT EXISTS idx_finanzen_datum ON finanzen(datum);
+        CREATE INDEX IF NOT EXISTS idx_finanzen_typ ON finanzen(typ);
         CREATE TABLE IF NOT EXISTS kalender (
           id TEXT PRIMARY KEY
         );

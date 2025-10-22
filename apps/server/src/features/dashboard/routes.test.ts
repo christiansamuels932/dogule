@@ -35,7 +35,12 @@ describe('dashboard routes', () => {
     await database.query({ text: "INSERT INTO kunden (id) VALUES ('cust-1'), ('cust-2')" });
     await database.query({ text: "INSERT INTO hunde (id) VALUES ('dog-1')" });
     await database.query({ text: "INSERT INTO kurse (id) VALUES ('course-1'), ('course-2'), ('course-3')" });
-    await database.query({ text: "INSERT INTO finanzen (id) VALUES ('fin-1')" });
+    await database.query({
+      text: `
+        INSERT INTO finanzen (datum, typ, betrag_cents)
+        VALUES (current_date, 'einnahme', 1000)
+      `,
+    });
     await database.query({ text: "INSERT INTO kalender (id) VALUES ('event-1'), ('event-2')" });
     await database.query({ text: "INSERT INTO kommunikation (id) VALUES ('msg-1'), ('msg-2'), ('msg-3'), ('msg-4')" });
 
@@ -47,6 +52,8 @@ describe('dashboard routes', () => {
       hundeCount: 1,
       kurseCount: 3,
       finanzenCount: 1,
+      finanzenEinnahmen: 1000,
+      finanzenAusgaben: 0,
       kalenderCount: 2,
       kommunikationCount: 4,
     });

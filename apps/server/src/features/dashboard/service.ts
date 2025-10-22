@@ -5,8 +5,13 @@ import { getDatabaseClient } from '../../infrastructure';
 import type { DatabaseClient } from '../../infrastructure';
 import { KundenRepository } from '../kunden/repository';
 import { HundeRepository } from '../hunde/repository';
+import { FinanzenRepository } from '../finanzen/repository';
+import { logError } from '@dogule/utils';
 
-const SUMMARY_QUERIES: Record<Exclude<keyof DashboardSummary, 'kundenCount' | 'hundeCount'>, string> = {
+const SUMMARY_QUERIES: Record<
+  'kurseCount' | 'finanzenCount' | 'kalenderCount' | 'kommunikationCount',
+  string
+> = {
   kurseCount: 'SELECT COUNT(*)::int AS count FROM kurse',
   finanzenCount: 'SELECT COUNT(*)::int AS count FROM finanzen',
   kalenderCount: 'SELECT COUNT(*)::int AS count FROM kalender',
@@ -20,6 +25,8 @@ const createEmptySummary = (): DashboardSummary => ({
   hundeCount: 0,
   kurseCount: 0,
   finanzenCount: 0,
+  finanzenEinnahmen: 0,
+  finanzenAusgaben: 0,
   kalenderCount: 0,
   kommunikationCount: 0,
 });
@@ -29,6 +36,7 @@ export class DashboardService {
     private readonly database: Database = getDatabaseClient(),
     private readonly kundenRepository = new KundenRepository(),
     private readonly hundeRepository = new HundeRepository(),
+    private readonly finanzenRepository = new FinanzenRepository(),
   ) {}
 
   async getSummary(): Promise<DashboardSummary> {
@@ -58,6 +66,24 @@ export class DashboardService {
         logError(ErrorCode.ERR_DASHBOARD_001, error);
         summary[key] = 0;
       }
+    }
+
+    const now = new Date();
+    const from = new Date(now);
+    from.setDate(from.getDate() - 30);
+    const fromDate = from.toISOString().slice(0, 10);
+
+    try {
+      const [einnahmen, ausgaben] = await Promise.all([
+        this.finanzenRepository.sum({ typ: 'einnahme', from: fromDate }),
+        this.finanzenRepository.sum({ typ: 'ausgabe', from: fromDate }),
+      ]);
+      summary.finanzenEinnahmen = einnahmen;
+      summary.finanzenAusgaben = ausgaben;
+    } catch (error) {
+      logError('ERR_DASHBOARD_001', error);
+      summary.finanzenEinnahmen = 0;
+      summary.finanzenAusgaben = 0;
     }
 
     return summary;

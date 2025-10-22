@@ -49,24 +49,44 @@ export interface CourseCreateInput {
   scheduleId?: string;
 }
 
-export interface FinancialRecord {
+export type FinanzTyp = 'einnahme' | 'ausgabe';
+
+export interface Finanz {
   id: string;
-  customerId: string;
-  amount: number;
-  currency: string;
-  type: 'invoice' | 'payment';
-  issuedAt: string;
-  dueAt?: string;
-  settledAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  datum: string;
+  typ: FinanzTyp;
+  betragCents: number;
+  kategorie?: string;
+  beschreibung?: string;
+  referenz?: string;
 }
 
-export interface FinancialRecordCreateInput {
-  customerId: string;
-  amount: number;
-  currency: string;
-  type: 'invoice' | 'payment';
-  issuedAt: string;
-  dueAt?: string;
+export interface FinanzCreateInput {
+  datum: string;
+  typ: FinanzTyp;
+  betragCents: number;
+  kategorie?: string;
+  beschreibung?: string;
+  referenz?: string;
+}
+
+export type FinanzUpdateInput = Partial<FinanzCreateInput>;
+
+export interface FinanzListFilters {
+  from?: string;
+  to?: string;
+  typ?: FinanzTyp;
+  limit?: number;
+  offset?: number;
+}
+
+export interface FinanzListResult {
+  data: Finanz[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 export interface CalendarEvent {
@@ -122,6 +142,8 @@ export interface DashboardSummary {
   hundeCount: number;
   kurseCount: number;
   finanzenCount: number;
+  finanzenEinnahmen: number;
+  finanzenAusgaben: number;
   kalenderCount: number;
   kommunikationCount: number;
 }

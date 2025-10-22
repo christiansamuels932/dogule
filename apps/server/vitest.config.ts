@@ -6,11 +6,13 @@ process.env.DATABASE_URL ??= 'postgresql://dogule:dogule@localhost:5432/dogule-t
 
 const workspaceRoot = resolve(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 const testingIndex = resolve(workspaceRoot, 'packages/testing/src/index.ts');
+const utilsIndex = resolve(workspaceRoot, 'packages/utils/src/index.ts');
 
 export default defineConfig({
   resolve: {
     alias: {
-      '@dogule/testing': testingIndex
+      '@dogule/testing': testingIndex,
+      '@dogule/utils': utilsIndex,
     }
   },
   test: {
