@@ -1,87 +1,82 @@
-import { FinancialRecordCreateInput } from '../../../../../packages/domain';
+import { z } from 'zod';
 
-const isString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
-const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
+import type { FinanzCreateInput, FinanzUpdateInput } from '../../../../../packages/domain';
 
-export const parseFinancialRecordCreateInput = (payload: unknown): FinancialRecordCreateInput => {
-  if (typeof payload !== 'object' || payload === null) {
-    throw new Error('Invalid financial record payload');
-  }
+const finanzTypSchema = z.enum(['einnahme', 'ausgabe']);
 
-  const { customerId, amount, currency, type, issuedAt, dueAt } = payload as Record<string, unknown>;
+const optionalText = z
+  .string()
+  .trim()
+  .min(1)
+  .transform((value) => value.trim())
+  .optional();
 
-  if (!isString(customerId) || !isNumber(amount) || !isString(currency) || !isString(type) || !isString(issuedAt)) {
-    throw new Error('Financial record customerId, amount, currency, type and issuedAt are required');
-  }
+const createSchema = z.object({
+  datum: z.coerce.date(),
+  typ: finanzTypSchema,
+  betrag_cents: z.number().int().min(0),
+  kategorie: optionalText,
+  beschreibung: optionalText,
+  referenz: optionalText,
+});
 
-  if (type !== 'invoice' && type !== 'payment') {
-    throw new Error('Financial record type must be invoice or payment');
-  }
+const updateSchema = createSchema.partial();
 
-  if (dueAt !== undefined && !isString(dueAt)) {
-    throw new Error('Financial record dueAt must be a string');
-  }
+const toDateString = (value: Date): string => value.toISOString().slice(0, 10);
 
-  return {
-    customerId,
-    amount,
-    currency,
-    type,
-    issuedAt,
-    dueAt,
+const mapSchemaToCreateInput = (data: z.infer<typeof createSchema>): FinanzCreateInput => {
+  const result: FinanzCreateInput = {
+    datum: toDateString(data.datum),
+    typ: data.typ,
+    betragCents: data.betrag_cents,
   };
+
+  if (data.kategorie !== undefined) {
+    result.kategorie = data.kategorie;
+  }
+
+  if (data.beschreibung !== undefined) {
+    result.beschreibung = data.beschreibung;
+  }
+
+  if (data.referenz !== undefined) {
+    result.referenz = data.referenz;
+  }
+
+  return result;
 };
 
-export const parseFinancialRecordUpdateInput = (
-  payload: unknown,
-): Partial<FinancialRecordCreateInput> => {
-  if (typeof payload !== 'object' || payload === null) {
-    throw new Error('Invalid financial record payload');
+export const parseFinanzCreateInput = (payload: unknown): FinanzCreateInput => {
+  const parsed = createSchema.parse(payload);
+  return mapSchemaToCreateInput(parsed);
+};
+
+export const parseFinanzUpdateInput = (payload: unknown): FinanzUpdateInput => {
+  const parsed = updateSchema.parse(payload);
+  const result: FinanzUpdateInput = {};
+
+  if (parsed.datum !== undefined) {
+    result.datum = toDateString(parsed.datum);
   }
 
-  const { customerId, amount, currency, type, issuedAt, dueAt } = payload as Record<string, unknown>;
-  const result: Partial<FinancialRecordCreateInput> = {};
-
-  if (customerId !== undefined) {
-    if (!isString(customerId)) {
-      throw new Error('Financial record customerId must be a string');
-    }
-    result.customerId = customerId;
+  if (parsed.typ !== undefined) {
+    result.typ = parsed.typ;
   }
 
-  if (amount !== undefined) {
-    if (!isNumber(amount)) {
-      throw new Error('Financial record amount must be a number');
-    }
-    result.amount = amount;
+  if (parsed.betrag_cents !== undefined) {
+    result.betragCents = parsed.betrag_cents;
   }
 
-  if (currency !== undefined) {
-    if (!isString(currency)) {
-      throw new Error('Financial record currency must be a string');
-    }
-    result.currency = currency;
+  if (parsed.kategorie !== undefined) {
+    result.kategorie = parsed.kategorie;
   }
 
-  if (type !== undefined) {
-    if (!isString(type) || (type !== 'invoice' && type !== 'payment')) {
-      throw new Error('Financial record type must be invoice or payment');
-    }
-    result.type = type as 'invoice' | 'payment';
+  if (parsed.beschreibung !== undefined) {
+    result.beschreibung = parsed.beschreibung;
   }
 
-  if (issuedAt !== undefined) {
-    if (!isString(issuedAt)) {
-      throw new Error('Financial record issuedAt must be a string');
-    }
-    result.issuedAt = issuedAt;
-  }
-
-  if (dueAt !== undefined) {
-    if (!isString(dueAt)) {
-      throw new Error('Financial record dueAt must be a string');
-    }
-    result.dueAt = dueAt;
+  if (parsed.referenz !== undefined) {
+    result.referenz = parsed.referenz;
   }
 
   return result;

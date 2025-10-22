@@ -1,34 +1,36 @@
 import {
-  FinancialRecord,
-  FinancialRecordCreateInput,
-  PaginatedResult,
-  PaginationQuery,
+  Finanz,
+  FinanzCreateInput,
+  FinanzListFilters,
+  FinanzListResult,
+  FinanzUpdateInput,
 } from '../../../../../packages/domain';
 import { FinanzenRepository } from './repository';
 
 export class FinanzenService {
   constructor(private readonly repository = new FinanzenRepository()) {}
 
-  list(query?: PaginationQuery): Promise<PaginatedResult<FinancialRecord>> {
-    return this.repository.findAll(query);
+  list(filters?: FinanzListFilters): Promise<FinanzListResult> {
+    return this.repository.list(filters);
   }
 
-  get(id: string): Promise<FinancialRecord | undefined> {
+  get(id: string): Promise<Finanz | undefined> {
     return this.repository.findById(id);
   }
 
-  create(payload: FinancialRecordCreateInput): Promise<FinancialRecord> {
+  create(payload: FinanzCreateInput): Promise<Finanz> {
     return this.repository.create(payload);
   }
 
-  update(
-    id: string,
-    payload: Partial<FinancialRecordCreateInput>,
-  ): Promise<FinancialRecord | undefined> {
+  update(id: string, payload: FinanzUpdateInput): Promise<Finanz | undefined> {
     return this.repository.update(id, payload);
   }
 
   delete(id: string): Promise<boolean> {
-    return this.repository.delete(id);
+    return this.repository.remove(id);
+  }
+
+  sum(filters?: Pick<FinanzListFilters, 'from' | 'to' | 'typ'>): Promise<number> {
+    return this.repository.sum(filters ?? {});
   }
 }
