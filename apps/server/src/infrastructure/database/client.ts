@@ -189,12 +189,37 @@ ${kundenColumns}
         );
         CREATE INDEX IF NOT EXISTS idx_finanzen_datum ON finanzen(datum);
         CREATE INDEX IF NOT EXISTS idx_finanzen_typ ON finanzen(typ);
+        DROP TABLE IF EXISTS kalender;
         CREATE TABLE IF NOT EXISTS kalender (
-          id TEXT PRIMARY KEY
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          titel TEXT NOT NULL,
+          beschreibung TEXT,
+          start_datum TIMESTAMPTZ NOT NULL,
+          end_datum TIMESTAMPTZ NOT NULL,
+          ort TEXT,
+          related_kurs_id UUID REFERENCES kurse(id) ON DELETE SET NULL,
+          related_hund_id UUID REFERENCES hunde(id) ON DELETE SET NULL
         );
+        CREATE INDEX IF NOT EXISTS idx_kalender_start ON kalender(start_datum);
+        CREATE INDEX IF NOT EXISTS idx_kalender_kurs_id ON kalender(related_kurs_id);
+        CREATE INDEX IF NOT EXISTS idx_kalender_hund_id ON kalender(related_hund_id);
+        DROP TABLE IF EXISTS kommunikation;
         CREATE TABLE IF NOT EXISTS kommunikation (
-          id TEXT PRIMARY KEY
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          sender_kunde_id ${kundenIdType} REFERENCES kunden(id) ON DELETE SET NULL,
+          recipient_kunde_id ${kundenIdType} REFERENCES kunden(id) ON DELETE SET NULL,
+          hund_id UUID REFERENCES hunde(id) ON DELETE SET NULL,
+          subject TEXT NOT NULL,
+          body TEXT NOT NULL,
+          sent_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          read_at TIMESTAMPTZ
         );
+        CREATE INDEX IF NOT EXISTS idx_kommunikation_sender ON kommunikation(sender_kunde_id);
+        CREATE INDEX IF NOT EXISTS idx_kommunikation_recipient ON kommunikation(recipient_kunde_id);
       `);
 
       for (const statement of statements) {
