@@ -227,6 +227,29 @@ describe('finanzen integration', () => {
     expect(ids).toContain(createdId);
   });
 
+  it('rejects invalid GraphQL inputs with ERR_GQL_VALIDATION_001', async () => {
+    const { app } = await createApp();
+    const agent = request(app);
+    const { token } = await registerAndLogin(agent);
+
+    const response = await agent
+      .post('/graphql')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        query: `
+          query InvalidFinanzen($typ: String) {
+            finanzen(typ: $typ) {
+              id
+            }
+          }
+        `,
+        variables: { typ: 'invalid' },
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.errors?.[0]?.message).toBe(ErrorCode.ERR_GQL_VALIDATION_001);
+  });
+
   it('emits ERR_FINANZ_CREATE_001 when invalid typ insertion fails', async () => {
     const repository = new FinanzenRepository();
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

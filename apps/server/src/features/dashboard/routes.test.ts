@@ -32,19 +32,28 @@ describe('dashboard routes', () => {
     const token = registerResponse.body.token as string;
     const database = getDatabaseClient();
 
-    await database.query({
-      text: "INSERT INTO kunden (id, first_name, last_name, email) VALUES ('cust-1', 'Jane', 'Doe', 'jane@example.com'), ('cust-2', 'John', 'Doe', 'john@example.com')",
+    const kundenRows = await database.query<{ id: string }>({
+      text: `
+        INSERT INTO kunden (first_name, last_name, email)
+        VALUES
+          ('Jane', 'Doe', 'jane@example.com'),
+          ('John', 'Doe', 'john@example.com')
+        RETURNING id
+      `,
     });
+    const [firstKunde] = kundenRows;
+
     await database.query({
-      text: "INSERT INTO hunde (id, kunde_id, name) VALUES ('dog-1', 'cust-1', 'Rex')",
+      text: 'INSERT INTO hunde (kunde_id, name) VALUES ($1, $2)',
+      params: [firstKunde.id, 'Rex'],
     });
     await database.query({
       text: `
-        INSERT INTO kurse (id, titel, start_datum)
+        INSERT INTO kurse (titel, start_datum)
         VALUES
-          ('course-1', 'Course 1', current_date),
-          ('course-2', 'Course 2', current_date),
-          ('course-3', 'Course 3', current_date)
+          ('Course 1', current_date),
+          ('Course 2', current_date),
+          ('Course 3', current_date)
       `,
     });
     await database.query({
@@ -53,17 +62,30 @@ describe('dashboard routes', () => {
         VALUES (current_date, 'einnahme', 1000)
       `,
     });
-    const now = new Date().toISOString();
+    const now = Date.now();
+    const eventStart = new Date(now + 60 * 60 * 1000).toISOString();
+    const eventEnd = new Date(now + 2 * 60 * 60 * 1000).toISOString();
+    const secondStart = new Date(now + 3 * 60 * 60 * 1000).toISOString();
+    const secondEnd = new Date(now + 4 * 60 * 60 * 1000).toISOString();
     await database.query({
       text: `
         INSERT INTO kalender_events (titel, start_at, end_at, status)
         VALUES
-          ('Event 1', $1, $1, 'geplant'),
-          ('Event 2', $2, $2, 'bestaetigt')
+          ('Event 1', $1, $2, 'geplant'),
+          ('Event 2', $3, $4, 'bestaetigt')
       `,
-      params: [now, now],
+      params: [eventStart, eventEnd, secondStart, secondEnd],
     });
-    await database.query({ text: "INSERT INTO kommunikation (id) VALUES ('msg-1'), ('msg-2'), ('msg-3'), ('msg-4')" });
+    await database.query({
+      text: `
+        INSERT INTO kommunikation (kanal, richtung, betreff, inhalt)
+        VALUES
+          ('email', 'eingehend', 'Hallo', 'Nachricht 1'),
+          ('email', 'eingehend', 'Hallo', 'Nachricht 2'),
+          ('email', 'ausgehend', 'Hallo', 'Nachricht 3'),
+          ('email', 'ausgehend', 'Hallo', 'Nachricht 4')
+      `,
+    });
 
     const response = await agent.get('/dashboard').set('Authorization', `Bearer ${token}`);
 
