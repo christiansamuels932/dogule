@@ -35,11 +35,11 @@
       "@dogule/domain/*": [
         "packages/domain/src/*"
       ],
-      "zod-to-openapi": [
-        "packages/zod-to-openapi/src/index.d.ts"
+      "@dogule/sdk": [
+        "packages/sdk/src/index.ts"
       ],
-      "zod-to-openapi/*": [
-        "packages/zod-to-openapi/src/*"
+      "@dogule/sdk/*": [
+        "packages/sdk/src/*"
       ],
       "express-rate-limit": [
         "packages/express-rate-limit/src/index.d.ts"
