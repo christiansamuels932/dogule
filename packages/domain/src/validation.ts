@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 const BaseEntitySchema = z.object({
-  uuid: z.string().uuid(),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
+  id: z.string().uuid(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
 });
 
 export const KundeSchema = BaseEntitySchema.extend({
@@ -46,12 +46,12 @@ export const KalenderSchema = BaseEntitySchema.extend({
 });
 
 export const KommunikationSchema = BaseEntitySchema.extend({
-  senderId: z.string().uuid(),
-  recipientId: z.string().uuid(),
-  subject: z.string().min(1),
-  body: z.string().min(1),
-  sentAt: z.string().datetime(),
-  readAt: z.string().datetime().optional(),
+  kanal: z.string().trim().min(1),
+  richtung: z.enum(['eingehend', 'ausgehend']),
+  betreff: z.string().trim().min(1),
+  inhalt: z.string().trim().min(1),
+  kundeId: z.string().uuid().optional(),
+  hundId: z.string().uuid().optional(),
 });
 
 export const Schemas = {
