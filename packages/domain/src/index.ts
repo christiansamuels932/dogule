@@ -89,23 +89,49 @@ export interface FinanzListResult {
   offset: number;
 }
 
-export interface CalendarEvent {
+export type KalenderEventStatus = 'geplant' | 'bestaetigt' | 'abgesagt';
+
+export interface KalenderEvent {
   id: string;
-  title: string;
-  description?: string;
-  start: string;
-  end: string;
-  relatedCourseId?: string;
-  relatedDogId?: string;
+  createdAt: string;
+  updatedAt: string;
+  titel: string;
+  beschreibung?: string;
+  startAt: string;
+  endAt: string;
+  ort?: string;
+  kundeId?: string;
+  hundId?: string;
+  status: KalenderEventStatus;
 }
 
-export interface CalendarEventCreateInput {
-  title: string;
-  description?: string;
-  start: string;
-  end: string;
-  relatedCourseId?: string;
-  relatedDogId?: string;
+export interface KalenderEventCreateInput {
+  titel: string;
+  beschreibung?: string;
+  startAt: string;
+  endAt: string;
+  ort?: string;
+  kundeId?: string;
+  hundId?: string;
+  status?: KalenderEventStatus;
+}
+
+export type KalenderEventUpdateInput = Partial<KalenderEventCreateInput>;
+
+export interface KalenderListFilters {
+  from?: string;
+  to?: string;
+  kundeId?: string;
+  hundId?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface KalenderListResult {
+  data: KalenderEvent[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 export interface Message {
@@ -146,6 +172,7 @@ export interface DashboardSummary {
   finanzenAusgaben: number;
   kalenderCount: number;
   kommunikationCount: number;
+  eventsUpcoming7d: number;
 }
 
 export { ErrorCode, LogCode } from './error-codes';
