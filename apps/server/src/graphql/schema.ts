@@ -10,6 +10,7 @@ import {
 import { KundenService } from '../features/kunden/service';
 import { HundeService } from '../features/hunde/service';
 import { KurseService } from '../features/kurse/service';
+import { kursCreateSchema } from '../features/kurse/schemas';
 import { FinanzenService } from '../features/finanzen/service';
 import { KalenderService } from '../features/kalender/service';
 import { KommunikationService } from '../features/kommunikation/service';
@@ -60,17 +61,27 @@ export const typeDefs = gql`
 
   type Kurs {
     id: ID!
-    title: String!
-    description: String
-    scheduleId: String
-    createdAt: String!
-    updatedAt: String!
+    titel: String!
+    beschreibung: String
+    start_datum: String!
+    end_datum: String
+    ort: String
+    preis_cents: Int!
+    max_teilnehmer: Int!
+    status: String!
+    created_at: String!
+    updated_at: String!
   }
 
   input KursInput {
-    title: String!
-    description: String
-    scheduleId: String
+    titel: String!
+    beschreibung: String
+    start_datum: String!
+    end_datum: String
+    ort: String
+    preis_cents: Int
+    max_teilnehmer: Int
+    status: String
   }
 
   type Finanz {
