@@ -1,6 +1,7 @@
 import { Course, CourseCreateInput, PaginatedResult, PaginationQuery } from '@dogule/domain';
 
-import { getDatabaseClient, type DatabaseClient } from '../../infrastructure';
+import { getDatabaseClient } from '../../infrastructure';
+import type { DatabaseClient } from '../../infrastructure';
 
 interface KursRow {
   id: string;

@@ -4,7 +4,7 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../../index';
 import { getDatabaseClient } from '../../infrastructure';
 
-const TABLES = ['kommunikation', 'kalender', 'finanzen', 'kurse', 'hunde', 'kunden', 'users'] as const;
+const TABLES = ['kommunikation', 'kalender_events', 'finanzen', 'kurse', 'hunde', 'kunden', 'users'] as const;
 
 describe('dashboard routes', () => {
   beforeAll(() => {
@@ -53,7 +53,16 @@ describe('dashboard routes', () => {
         VALUES (current_date, 'einnahme', 1000)
       `,
     });
-    await database.query({ text: "INSERT INTO kalender (id) VALUES ('event-1'), ('event-2')" });
+    const now = new Date().toISOString();
+    await database.query({
+      text: `
+        INSERT INTO kalender_events (titel, start_at, end_at, status)
+        VALUES
+          ('Event 1', $1, $1, 'geplant'),
+          ('Event 2', $2, $2, 'bestaetigt')
+      `,
+      params: [now, now],
+    });
     await database.query({ text: "INSERT INTO kommunikation (id) VALUES ('msg-1'), ('msg-2'), ('msg-3'), ('msg-4')" });
 
     const response = await agent.get('/dashboard').set('Authorization', `Bearer ${token}`);
@@ -68,6 +77,7 @@ describe('dashboard routes', () => {
       finanzenAusgaben: 0,
       kalenderCount: 2,
       kommunikationCount: 4,
+      eventsUpcoming7d: 2,
     });
   });
 });
