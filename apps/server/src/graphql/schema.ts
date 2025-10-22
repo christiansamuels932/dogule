@@ -7,7 +7,8 @@ import {
   FinanzCreateInput,
   KalenderEventCreateInput,
   KalenderEventUpdateInput,
-  MessageCreateInput,
+  KommunikationCreateInput,
+  KommunikationUpdateInput,
 } from '@dogule/domain';
 import { KundenService } from '../features/kunden/service';
 import { HundeService } from '../features/hunde/service';
@@ -306,7 +307,7 @@ export const resolvers = {
       return event;
     },
     deleteEvent: (_: unknown, { id }: { id: string }) => kalenderService.delete(id),
-    createNachricht: (_: unknown, { input }: { input: MessageCreateInput }) =>
+    createNachricht: (_: unknown, { input }: { input: KommunikationCreateInput }) =>
       kommunikationService.create(input),
     updateNachricht: (
       _: unknown,
