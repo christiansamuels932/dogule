@@ -2,6 +2,8 @@ import request from 'supertest';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import jwt from 'jsonwebtoken';
 
+import { ErrorCode } from '@dogule/domain';
+
 let createApp: typeof import('../../index')['createApp'];
 let getDatabaseClient: typeof import('../../infrastructure')['getDatabaseClient'];
 
@@ -74,7 +76,7 @@ describe('auth routes', () => {
     const response = await agent.get('/api/hunde');
 
     expect(response.status).toBe(401);
-    expect(response.body).toEqual({ message: 'ERR_AUTH_401' });
+    expect(response.body).toEqual({ message: ErrorCode.ERR_AUTH_401 });
   });
 
   it('requires authentication for /auth/me', async () => {
@@ -84,7 +86,7 @@ describe('auth routes', () => {
     const response = await agent.get('/auth/me');
 
     expect(response.status).toBe(401);
-    expect(response.body).toEqual({ message: 'ERR_AUTH_401' });
+    expect(response.body).toEqual({ message: ErrorCode.ERR_AUTH_401 });
   });
 
   it('rejects invalid JWTs with ERR_AUTH_INVALID_001', async () => {
@@ -112,7 +114,7 @@ describe('auth routes', () => {
       .set('Authorization', `Bearer ${invalidToken}`);
 
     expect(response.status).toBe(401);
-    expect(response.body).toEqual({ message: 'ERR_AUTH_INVALID_001' });
+    expect(response.body).toEqual({ message: ErrorCode.ERR_AUTH_INVALID_001 });
   });
 
   it('rejects expired JWTs with ERR_AUTH_EXPIRED_001', async () => {
@@ -143,7 +145,7 @@ describe('auth routes', () => {
       .set('Authorization', `Bearer ${expiredToken}`);
 
     expect(response.status).toBe(401);
-    expect(response.body).toEqual({ message: 'ERR_AUTH_EXPIRED_001' });
+    expect(response.body).toEqual({ message: ErrorCode.ERR_AUTH_EXPIRED_001 });
   });
 
   it('rejects wrong passwords with ERR_AUTH_LOGIN_001', async () => {
@@ -163,6 +165,6 @@ describe('auth routes', () => {
     });
 
     expect(response.status).toBe(401);
-    expect(response.body).toEqual({ message: 'ERR_AUTH_LOGIN_001' });
+    expect(response.body).toEqual({ message: ErrorCode.ERR_AUTH_LOGIN_001 });
   });
 });

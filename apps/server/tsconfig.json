@@ -5,8 +5,10 @@
     "outDir": "dist",
     "lib": ["ES2020"],
     "moduleResolution": "Node",
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "types": ["vitest/globals"],
+    "rootDirs": ["src", "../.."]
   },
-  "include": ["src", "vitest.config.ts"],
+  "include": ["src"],
   "exclude": ["dist", "node_modules"]
 }

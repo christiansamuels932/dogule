@@ -1,11 +1,11 @@
 import { z } from 'zod';
-import { DogCreateInput } from '../../../../../packages/domain';
+import { DogCreateInput } from '@dogule/domain';
 
 const isoDateSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format, expected YYYY-MM-DD');
 
-const hundeCreateSchema = z.object({
+export const hundeCreateSchema = z.object({
   kunde_id: z.string().uuid(),
   name: z.string().trim().min(1, 'Name is required'),
   geburtsdatum: isoDateSchema.optional(),
@@ -13,7 +13,7 @@ const hundeCreateSchema = z.object({
   notizen: z.union([z.string(), z.null()]).optional(),
 });
 
-const hundeUpdateSchema = z
+export const hundeUpdateSchema = z
   .object({
     kunde_id: z.string().uuid().optional(),
     name: z.string().trim().min(1).optional(),

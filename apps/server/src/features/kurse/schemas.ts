@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { CourseCreateInput } from '@dogule/domain';
 
 export const kursStatusEnum = z.enum(['geplant', 'laufend', 'abgeschlossen', 'abgesagt']);
 

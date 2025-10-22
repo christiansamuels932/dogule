@@ -2,10 +2,11 @@ import { gql } from 'apollo-server-express';
 import {
   CustomerCreateInput,
   DogCreateInput,
-  FinancialRecordCreateInput,
+  CourseCreateInput,
+  FinanzCreateInput,
   CalendarEventCreateInput,
   MessageCreateInput,
-} from '../../../../packages/domain';
+} from '@dogule/domain';
 import { KundenService } from '../features/kunden/service';
 import { HundeService } from '../features/hunde/service';
 import { KurseService } from '../features/kurse/service';
@@ -83,24 +84,25 @@ export const typeDefs = gql`
     status: String
   }
 
-  type FinanzEintrag {
+  type Finanz {
     id: ID!
-    customerId: String!
-    amount: Float!
-    currency: String!
-    type: String!
-    issuedAt: String!
-    dueAt: String
-    settledAt: String
+    createdAt: String!
+    updatedAt: String!
+    datum: String!
+    typ: String!
+    betragCents: Int!
+    kategorie: String
+    beschreibung: String
+    referenz: String
   }
 
-  input FinanzEintragInput {
-    customerId: String!
-    amount: Float!
-    currency: String!
-    type: String!
-    issuedAt: String!
-    dueAt: String
+  input FinanzInput {
+    datum: String!
+    typ: String!
+    betragCents: Int!
+    kategorie: String
+    beschreibung: String
+    referenz: String
   }
 
   type KalenderEvent {
@@ -143,7 +145,7 @@ export const typeDefs = gql`
     kunden: [Kunde!]!
     hunde: [Hund!]!
     kurse: [Kurs!]!
-    finanzen: [FinanzEintrag!]!
+    finanzen(from: String, to: String, typ: String): [Finanz!]!
     kalender: [KalenderEvent!]!
     nachrichten: [Nachricht!]!
   }
@@ -152,7 +154,7 @@ export const typeDefs = gql`
     createKunde(input: KundeInput!): Kunde!
     createHund(input: HundInput!): Hund!
     createKurs(input: KursInput!): Kurs!
-    createFinanzEintrag(input: FinanzEintragInput!): FinanzEintrag!
+    createFinanz(input: FinanzInput!): Finanz!
     createKalenderEvent(input: KalenderEventInput!): KalenderEvent!
     createNachricht(input: NachrichtInput!): Nachricht!
   }
@@ -162,17 +164,39 @@ export const resolvers = {
   Query: {
     kunden: () => kundenService.list().then((result) => result.data),
     hunde: () => hundeService.list().then((result) => result.data),
-    kurse: () => kurseService.list({ limit: 50, offset: 0 }).then((result) => result.data),
-    finanzen: () => finanzenService.list().then((result) => result.data),
+    kurse: () => kurseService.list().then((result) => result.data),
+    finanzen: (
+      _: unknown,
+      args: { from?: string; to?: string; typ?: string },
+    ) => {
+      const filters: { from?: string; to?: string; typ?: 'einnahme' | 'ausgabe' } = {};
+
+      if (args.from) {
+        filters.from = args.from;
+      }
+
+      if (args.to) {
+        filters.to = args.to;
+      }
+
+      if (args.typ) {
+        if (args.typ !== 'einnahme' && args.typ !== 'ausgabe') {
+          throw new Error('Invalid typ parameter');
+        }
+
+        filters.typ = args.typ;
+      }
+
+      return finanzenService.list(filters).then((result) => result.data);
+    },
     kalender: () => kalenderService.list().then((result) => result.data),
     nachrichten: () => kommunikationService.list().then((result) => result.data),
   },
   Mutation: {
     createKunde: (_: unknown, { input }: { input: CustomerCreateInput }) => kundenService.create(input),
     createHund: (_: unknown, { input }: { input: DogCreateInput }) => hundeService.create(input),
-    createKurs: (_: unknown, { input }: { input: unknown }) =>
-      kurseService.create(kursCreateSchema.parse(input)),
-    createFinanzEintrag: (_: unknown, { input }: { input: FinancialRecordCreateInput }) =>
+    createKurs: (_: unknown, { input }: { input: CourseCreateInput }) => kurseService.create(input),
+    createFinanz: (_: unknown, { input }: { input: FinanzCreateInput }) =>
       finanzenService.create(input),
     createKalenderEvent: (_: unknown, { input }: { input: CalendarEventCreateInput }) =>
       kalenderService.create(input),

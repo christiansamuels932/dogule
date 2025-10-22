@@ -28,6 +28,15 @@
       ],
       "@dogule/utils/*": [
         "packages/utils/src/*"
+      ],
+      "@dogule/domain": [
+        "packages/domain/index.ts"
+      ],
+      "@dogule/domain/*": [
+        "packages/domain/src/*"
+      ],
+      "express-rate-limit": [
+        "packages/express-rate-limit/src/index.d.ts"
       ]
     },
     "types": [

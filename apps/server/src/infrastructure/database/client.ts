@@ -2,7 +2,9 @@ import { randomUUID } from 'crypto';
 
 import { Pool, QueryResult } from 'pg';
 import { IMemoryDb, newDb } from 'pg-mem';
+import type { DataType } from 'pg-mem';
 
+import { ErrorCode, LogCode } from '@dogule/domain';
 import { logError, logInfo, logWarn } from '@dogule/utils';
 
 export interface QueryOptions {
@@ -35,53 +37,53 @@ export class DatabaseClient {
 
     if (this.mode === 'postgres') {
       if (!this.url) {
-        logError('ERR_DB_CONFIG_001 mode=postgres requires url');
-        throw new Error('ERR_DB_CONFIG_001');
+        logError(ErrorCode.ERR_DB_CONFIG_001, 'mode=postgres requires url');
+        throw new Error(ErrorCode.ERR_DB_CONFIG_001);
       }
 
       try {
         this.pool = new Pool({ connectionString: this.url });
       } catch (error) {
-        logError('ERR_DB_CONNECT_001', error);
-        throw new Error('ERR_DB_CONNECT_001');
+        logError(ErrorCode.ERR_DB_CONNECT_001, error);
+        throw new Error(ErrorCode.ERR_DB_CONNECT_001);
       }
 
       try {
         await this.pool.query('SELECT 1');
       } catch (error) {
-        logError('ERR_DB_LIVENESS_001', error);
+        logError(ErrorCode.ERR_DB_LIVENESS_001, error);
         await this.pool.end().catch(() => undefined);
         this.pool = undefined;
-        throw new Error('ERR_DB_LIVENESS_001');
+        throw new Error(ErrorCode.ERR_DB_LIVENESS_001);
       }
 
-      logInfo('LOG_DB_READY_001', this.url);
+      logInfo(LogCode.LOG_DB_READY_001, this.url);
     } else {
       try {
         this.memoryDb = newDb();
         this.memoryDb.public.registerFunction({
           name: 'gen_random_uuid',
-          returns: 'uuid',
+          returns: 'uuid' as unknown as DataType,
           implementation: () => randomUUID(),
           impure: true,
         });
         const { Pool: MemoryPool } = this.memoryDb.adapters.createPg();
         this.pool = new MemoryPool() as unknown as Pool;
       } catch (error) {
-        logError('ERR_DB_CONNECT_001', error);
-        throw new Error('ERR_DB_CONNECT_001');
+        logError(ErrorCode.ERR_DB_CONNECT_001, error);
+        throw new Error(ErrorCode.ERR_DB_CONNECT_001);
       }
 
       try {
         await this.pool.query('SELECT 1');
       } catch (error) {
-        logError('ERR_DB_LIVENESS_001', error);
+        logError(ErrorCode.ERR_DB_LIVENESS_001, error);
         this.pool = undefined;
         this.memoryDb = undefined;
-        throw new Error('ERR_DB_LIVENESS_001');
+        throw new Error(ErrorCode.ERR_DB_LIVENESS_001);
       }
 
-      logInfo('LOG_DB_READY_002');
+      logInfo(LogCode.LOG_DB_READY_002);
     }
 
     await this.bootstrapSchema(this.pool);
@@ -122,6 +124,20 @@ export class DatabaseClient {
         statements.push('CREATE EXTENSION IF NOT EXISTS pgcrypto;');
       }
 
+      const kundenIdType = this.mode === 'postgres' ? 'UUID' : 'TEXT';
+
+      const isMemory = this.mode === 'memory';
+      const kundenColumns = `
+          id ${kundenIdType} PRIMARY KEY DEFAULT gen_random_uuid(),
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          first_name TEXT${isMemory ? '' : ' NOT NULL'},
+          last_name TEXT${isMemory ? '' : ' NOT NULL'},
+          email TEXT${isMemory ? '' : ' NOT NULL'},
+          phone TEXT,
+          notes TEXT
+        `;
+
       statements.push(`
         CREATE TABLE IF NOT EXISTS users (
           id TEXT PRIMARY KEY,
@@ -130,14 +146,7 @@ export class DatabaseClient {
           role TEXT NOT NULL
         );
         CREATE TABLE IF NOT EXISTS kunden (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-          updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-          first_name TEXT NOT NULL,
-          last_name TEXT NOT NULL,
-          email TEXT NOT NULL,
-          phone TEXT,
-          notes TEXT
+${kundenColumns}
         );
         CREATE INDEX IF NOT EXISTS idx_kunden_created_at ON kunden(created_at);
         DROP TABLE IF EXISTS hunde;
@@ -168,8 +177,18 @@ export class DatabaseClient {
         );
         CREATE INDEX IF NOT EXISTS idx_kurse_start ON kurse(start_datum);
         CREATE TABLE IF NOT EXISTS finanzen (
-          id TEXT PRIMARY KEY
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          datum DATE NOT NULL,
+          typ TEXT NOT NULL CHECK (typ IN ('einnahme','ausgabe')),
+          betrag_cents INTEGER NOT NULL CHECK (betrag_cents >= 0),
+          kategorie TEXT,
+          beschreibung TEXT,
+          referenz TEXT
         );
+        CREATE INDEX IF NOT EXISTS idx_finanzen_datum ON finanzen(datum);
+        CREATE INDEX IF NOT EXISTS idx_finanzen_typ ON finanzen(typ);
         CREATE TABLE IF NOT EXISTS kalender (
           id TEXT PRIMARY KEY
         );
@@ -182,16 +201,20 @@ export class DatabaseClient {
         await pool.query(statement);
       }
       this.bootstrapped = true;
-      logInfo('LOG_DB_BOOTSTRAP_001');
+      logInfo(LogCode.LOG_DB_BOOTSTRAP_001);
     } catch (error) {
-      logError('ERR_DB_BOOTSTRAP_001', error);
-      throw new Error('ERR_DB_BOOTSTRAP_001');
+      logError(ErrorCode.ERR_DB_BOOTSTRAP_001, error);
+      throw new Error(ErrorCode.ERR_DB_BOOTSTRAP_001);
     }
   }
 }
 
 export const createDatabaseClient = (url?: string): DatabaseClient => {
   const candidateUrl = url?.trim() || process.env.DATABASE_URL?.trim();
+
+  if (process.env.NODE_ENV === 'test') {
+    return new DatabaseClient({ mode: 'memory' });
+  }
 
   if (candidateUrl) {
     if (candidateUrl.startsWith('pg-mem://')) {

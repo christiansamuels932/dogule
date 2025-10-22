@@ -1,11 +1,4 @@
-import type {
-  Kurs,
-  KursCreateInput,
-  KursListQuery,
-  KursListResult,
-  KursStatus,
-  KursUpdateInput,
-} from './schemas';
+import { Course, CourseCreateInput, PaginatedResult, PaginationQuery } from '@dogule/domain';
 import { KurseRepository } from './repository';
 
 export class KurseService {

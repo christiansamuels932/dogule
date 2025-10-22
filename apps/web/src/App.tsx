@@ -1,7 +1,7 @@
 import { createConsoleSpy } from '@dogule/testing';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
-import type { DashboardSummary } from '../../../packages/domain';
+import { ErrorCode, type DashboardSummary } from '@dogule/domain';
 
 const TOKEN_STORAGE_KEY = 'dogule_token';
 
@@ -33,6 +33,8 @@ const createEmptySummary = (): DashboardSummary => ({
   hundeCount: 0,
   kurseCount: 0,
   finanzenCount: 0,
+  finanzenEinnahmen: 0,
+  finanzenAusgaben: 0,
   kalenderCount: 0,
   kommunikationCount: 0,
 });
@@ -86,13 +88,13 @@ export const App = () => {
         });
 
         if (!response.ok) {
-          throw new Error('ERR_SESSION_LOAD_001');
+          throw new Error(ErrorCode.ERR_SESSION_LOAD_001);
         }
 
         const result = (await response.json()) as { user?: UserProfile } | undefined;
 
         if (!result?.user) {
-          throw new Error('ERR_SESSION_LOAD_001');
+          throw new Error(ErrorCode.ERR_SESSION_LOAD_001);
         }
 
         if (!cancelled) {
@@ -106,7 +108,7 @@ export const App = () => {
           setToken(null);
           setUser(null);
           setSummary(null);
-          setSessionError('ERR_SESSION_LOAD_001');
+          setSessionError(ErrorCode.ERR_SESSION_LOAD_001);
         }
       } finally {
         if (!cancelled) {
@@ -116,7 +118,7 @@ export const App = () => {
     };
 
     restoreSession().catch((error) => {
-      console.error('ERR_SESSION_LOAD_001', error);
+      console.error(ErrorCode.ERR_SESSION_LOAD_001, error);
     });
 
     return () => {
@@ -145,13 +147,13 @@ export const App = () => {
         });
 
         if (!response.ok) {
-          throw new Error('ERR_DASHBOARD_LOAD_001');
+          throw new Error(ErrorCode.ERR_DASHBOARD_LOAD_001);
         }
 
         const result = (await response.json()) as DashboardSummary | undefined;
 
         if (!result) {
-          throw new Error('ERR_DASHBOARD_LOAD_001');
+          throw new Error(ErrorCode.ERR_DASHBOARD_LOAD_001);
         }
 
         if (!cancelled) {
@@ -161,7 +163,7 @@ export const App = () => {
         console.error('Failed to load dashboard summary', error);
         if (!cancelled) {
           setSummary(createEmptySummary());
-          setSummaryError('ERR_DASHBOARD_LOAD_001');
+          setSummaryError(ErrorCode.ERR_DASHBOARD_LOAD_001);
         }
       } finally {
         if (!cancelled) {
@@ -171,7 +173,7 @@ export const App = () => {
     };
 
     loadSummary().catch((error) => {
-      console.error('ERR_DASHBOARD_LOAD_001', error);
+      console.error(ErrorCode.ERR_DASHBOARD_LOAD_001, error);
     });
 
     return () => {

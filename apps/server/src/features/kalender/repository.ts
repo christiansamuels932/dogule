@@ -3,7 +3,7 @@ import {
   CalendarEventCreateInput,
   PaginatedResult,
   PaginationQuery,
-} from '../../../../../packages/domain';
+} from '@dogule/domain';
 
 let sequence = 0;
 const generateId = () => {

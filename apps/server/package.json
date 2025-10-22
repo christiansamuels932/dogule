@@ -7,12 +7,16 @@
     "test": "vitest run --reporter=dot",
     "test:watch": "vitest",
     "build": "tsc -p tsconfig.json",
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "spec:check": "tsx scripts/spec-check.ts",
+    "typecheck": "tsc -p tsconfig.typecheck.json",
+    "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
     "apollo-server-express": "^3.13.0",
     "bcrypt": "^5.1.1",
     "dotenv": "^16.4.5",
+    "express-rate-limit": "workspace:*",
     "express": "^4.19.2",
     "graphql": "^16.8.1",
     "jsonwebtoken": "^9.0.2",
@@ -24,10 +28,10 @@
     "@types/bcrypt": "^5.0.2",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/supertest": "^2.0.16",
-    "@vitest/coverage-v8": "^2.0.0",
+    "@vitest/coverage-v8": "^1.6.1",
     "supertest": "^6.3.4",
     "tsx": "^4.7.0",
     "typescript": "^5.6.0",
-    "vitest": "^2.0.0"
+    "vitest": "^1.6.1"
   }
 }

@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ErrorCode } from '@dogule/domain';
+
 import { loadConfig, createDatabaseClient } from './infrastructure';
 
 describe('configuration', () => {
@@ -20,6 +22,8 @@ describe('configuration', () => {
     process.env.NODE_ENV = 'development';
     process.env.DATABASE_URL = 'postgres://postgres:postgres@localhost:5432/dogule';
     process.env.JWT_SECRET = 'test-secret';
+    process.env.RATE_LIMIT_WINDOW_MS = '5000';
+    process.env.RATE_LIMIT_MAX = '10';
 
     const config = loadConfig();
 
@@ -28,6 +32,10 @@ describe('configuration', () => {
       nodeEnv: 'development',
       databaseUrl: 'postgres://postgres:postgres@localhost:5432/dogule',
       jwtSecret: 'test-secret',
+      rateLimit: {
+        windowMs: 5000,
+        max: 10,
+      },
     });
   });
 
@@ -42,7 +50,8 @@ describe('configuration', () => {
 
     expect(() => loadConfig()).toThrow('process.exit called');
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('ERR_DB_ENV_001 Missing DATABASE_URL environment variable'),
+      ErrorCode.ERR_DB_ENV_001,
+      'Missing DATABASE_URL environment variable',
     );
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
@@ -58,7 +67,8 @@ describe('configuration', () => {
 
     expect(() => loadConfig()).toThrow('process.exit called');
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('ERR_AUTH_ENV_001 Missing JWT_SECRET environment variable'),
+      ErrorCode.ERR_AUTH_ENV_001,
+      'Missing JWT_SECRET environment variable',
     );
     expect(exitSpy).toHaveBeenCalledWith(1);
   });
