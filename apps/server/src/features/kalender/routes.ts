@@ -1,18 +1,39 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
+import { ZodError } from 'zod';
+
+import { ErrorCode } from '@dogule/domain';
+
 import { KalenderService } from './service';
-import { parseCalendarEventCreateInput, parseCalendarEventUpdateInput } from './schemas';
+import {
+  parseKalenderCreateInput,
+  parseKalenderListFilters,
+  parseKalenderUpdateInput,
+} from './schemas';
 
 const router = Router();
 const service = new KalenderService();
 
+const handleValidationError = (error: unknown, res: Response) => {
+  if (error instanceof ZodError) {
+    res.status(400).json({
+      message: ErrorCode.ERR_KALENDER_INVALID_PAYLOAD,
+      details: error.flatten(),
+    });
+    return true;
+  }
+
+  return false;
+};
+
 router.get('/', async (req, res, next) => {
   try {
-    const page = req.query.page ? Number(req.query.page) : undefined;
-    const pageSize = req.query.pageSize ? Number(req.query.pageSize) : undefined;
-    const result = await service.list({ page, pageSize });
+    const filters = parseKalenderListFilters(req.query);
+    const result = await service.list(filters);
     res.json(result);
   } catch (error) {
-    next(error);
+    if (!handleValidationError(error, res)) {
+      next(error);
+    }
   }
 });
 
@@ -30,24 +51,28 @@ router.get('/:id', async (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
   try {
-    const payload = parseCalendarEventCreateInput(req.body);
+    const payload = parseKalenderCreateInput(req.body);
     const event = await service.create(payload);
     res.status(201).json(event);
   } catch (error) {
-    next(error);
+    if (!handleValidationError(error, res)) {
+      next(error);
+    }
   }
 });
 
-router.put('/:id', async (req, res, next) => {
+router.patch('/:id', async (req, res, next) => {
   try {
-    const payload = parseCalendarEventUpdateInput(req.body);
+    const payload = parseKalenderUpdateInput(req.body);
     const event = await service.update(req.params.id, payload);
     if (!event) {
       return res.status(404).json({ message: 'Calendar event not found' });
     }
     res.json(event);
   } catch (error) {
-    next(error);
+    if (!handleValidationError(error, res)) {
+      next(error);
+    }
   }
 });
 
