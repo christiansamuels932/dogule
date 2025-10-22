@@ -150,19 +150,49 @@ export const typeDefs = gql`
 
   type Nachricht {
     id: ID!
-    senderId: String!
-    recipientId: String!
-    subject: String!
-    body: String!
-    sentAt: String!
-    readAt: String
+    kanal: String!
+    richtung: String!
+    betreff: String!
+    inhalt: String!
+    kundeId: String
+    hundId: String
+    createdAt: String!
+    updatedAt: String!
   }
 
   input NachrichtInput {
-    senderId: String!
-    recipientId: String!
-    subject: String!
-    body: String!
+    kanal: String!
+    richtung: String!
+    betreff: String!
+    inhalt: String!
+    kundeId: String
+    hundId: String
+  }
+
+  input NachrichtUpdateInput {
+    kanal: String
+    richtung: String
+    betreff: String
+    inhalt: String
+    kundeId: String
+    hundId: String
+  }
+
+  input NachrichtFilterInput {
+    kundeId: String
+    hundId: String
+    kanal: String
+    from: String
+    to: String
+    limit: Int
+    offset: Int
+  }
+
+  type NachrichtList {
+    data: [Nachricht!]!
+    total: Int!
+    limit: Int!
+    offset: Int!
   }
 
   type Query {
@@ -183,6 +213,8 @@ export const typeDefs = gql`
     updateEvent(id: ID!, input: KalenderEventUpdateInput!): KalenderEvent!
     deleteEvent(id: ID!): Boolean!
     createNachricht(input: NachrichtInput!): Nachricht!
+    updateNachricht(id: ID!, input: NachrichtUpdateInput!): Nachricht!
+    deleteNachricht(id: ID!): Boolean!
   }
 `;
 
@@ -276,5 +308,17 @@ export const resolvers = {
     deleteEvent: (_: unknown, { id }: { id: string }) => kalenderService.delete(id),
     createNachricht: (_: unknown, { input }: { input: MessageCreateInput }) =>
       kommunikationService.create(input),
+    updateNachricht: (
+      _: unknown,
+      { id, input }: { id: string; input: KommunikationUpdateInput },
+    ) =>
+      kommunikationService.update(id, input).then((result) => {
+        if (!result) {
+          throw new Error('Kommunikationseintrag nicht gefunden');
+        }
+
+        return result;
+      }),
+    deleteNachricht: (_: unknown, { id }: { id: string }) => kommunikationService.remove(id),
   },
 };

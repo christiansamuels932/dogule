@@ -42,9 +42,8 @@ describe('DashboardService', () => {
       eventsUpcoming7d: 0,
     });
     expect(database.query).toHaveBeenCalled();
-    expect(consoleSpy).toHaveBeenCalledWith('ERR_DASHBOARD_001', expect.any(Error));
-    expect(consoleSpy).toHaveBeenCalledWith('[ERROR]', 'ERR_DASHBOARD_001', expect.any(Error));
+    expect(logSpy).toHaveBeenCalledWith(ErrorCode.ERR_DASHBOARD_001, expect.any(Error));
 
-    consoleSpy.mockRestore();
+    logSpy.mockRestore();
   });
 });

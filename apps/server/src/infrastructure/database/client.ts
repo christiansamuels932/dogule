@@ -208,8 +208,20 @@ ${kundenColumns}
         CREATE INDEX IF NOT EXISTS idx_events_kunde ON kalender_events(kunde_id);
         CREATE INDEX IF NOT EXISTS idx_events_hund ON kalender_events(hund_id);
         CREATE TABLE IF NOT EXISTS kommunikation (
-          id TEXT PRIMARY KEY
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          kanal TEXT NOT NULL,
+          richtung TEXT NOT NULL,
+          betreff TEXT NOT NULL,
+          inhalt TEXT NOT NULL,
+          kunde_id ${kundenIdType} REFERENCES kunden(id) ON DELETE SET NULL,
+          hund_id UUID REFERENCES hunde(id) ON DELETE SET NULL
         );
+        CREATE INDEX IF NOT EXISTS idx_kommunikation_kunde_id ON kommunikation(kunde_id);
+        CREATE INDEX IF NOT EXISTS idx_kommunikation_hund_id ON kommunikation(hund_id);
+        CREATE INDEX IF NOT EXISTS idx_kommunikation_kanal ON kommunikation(kanal);
+        CREATE INDEX IF NOT EXISTS idx_kommunikation_created_at ON kommunikation(created_at);
       `);
 
       for (const statement of statements) {
