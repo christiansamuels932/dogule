@@ -32,6 +32,7 @@ describe('configuration', () => {
       nodeEnv: 'development',
       databaseUrl: 'postgres://postgres:postgres@localhost:5432/dogule',
       jwtSecret: 'test-secret',
+      refreshTokenTtlMs: 604800000,
       rateLimit: {
         windowMs: 5000,
         max: 10,

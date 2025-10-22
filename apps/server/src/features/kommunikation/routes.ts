@@ -1,28 +1,49 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
+import { ZodError } from 'zod';
+
+import { ErrorCode } from '@dogule/domain';
+
 import { KommunikationService } from './service';
-import { parseMessageCreateInput, parseMessageUpdateInput } from './schemas';
+import {
+  parseKommunikationCreateInput,
+  parseKommunikationListQuery,
+  parseKommunikationUpdateInput,
+} from './schemas';
 
 const router = Router();
 const service = new KommunikationService();
 
+const handleValidationError = (error: unknown, res: Response) => {
+  if (error instanceof ZodError) {
+    res.status(400).json({
+      message: ErrorCode.ERR_KOMM_INVALID_PAYLOAD,
+      details: error.flatten(),
+    });
+    return true;
+  }
+
+  return false;
+};
+
 router.get('/', async (req, res, next) => {
   try {
-    const page = req.query.page ? Number(req.query.page) : undefined;
-    const pageSize = req.query.pageSize ? Number(req.query.pageSize) : undefined;
-    const result = await service.list({ page, pageSize });
+    const filters = parseKommunikationListQuery(req.query as Record<string, unknown>);
+    const result = await service.list(filters);
     res.json(result);
   } catch (error) {
-    next(error);
+    if (!handleValidationError(error, res)) {
+      next(error);
+    }
   }
 });
 
 router.get('/:id', async (req, res, next) => {
   try {
-    const message = await service.get(req.params.id);
-    if (!message) {
-      return res.status(404).json({ message: 'Message not found' });
+    const eintrag = await service.get(req.params.id);
+    if (!eintrag) {
+      return res.status(404).json({ message: 'Kommunikationseintrag nicht gefunden' });
     }
-    res.json(message);
+    res.json(eintrag);
   } catch (error) {
     next(error);
   }
@@ -30,32 +51,36 @@ router.get('/:id', async (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
   try {
-    const payload = parseMessageCreateInput(req.body);
-    const message = await service.create(payload);
-    res.status(201).json(message);
+    const payload = parseKommunikationCreateInput(req.body);
+    const eintrag = await service.create(payload);
+    res.status(201).json(eintrag);
   } catch (error) {
-    next(error);
+    if (!handleValidationError(error, res)) {
+      next(error);
+    }
   }
 });
 
 router.put('/:id', async (req, res, next) => {
   try {
-    const payload = parseMessageUpdateInput(req.body);
-    const message = await service.update(req.params.id, payload);
-    if (!message) {
-      return res.status(404).json({ message: 'Message not found' });
+    const payload = parseKommunikationUpdateInput(req.body);
+    const eintrag = await service.update(req.params.id, payload);
+    if (!eintrag) {
+      return res.status(404).json({ message: 'Kommunikationseintrag nicht gefunden' });
     }
-    res.json(message);
+    res.json(eintrag);
   } catch (error) {
-    next(error);
+    if (!handleValidationError(error, res)) {
+      next(error);
+    }
   }
 });
 
 router.delete('/:id', async (req, res, next) => {
   try {
-    const deleted = await service.delete(req.params.id);
+    const deleted = await service.remove(req.params.id);
     if (!deleted) {
-      return res.status(404).json({ message: 'Message not found' });
+      return res.status(404).json({ message: 'Kommunikationseintrag nicht gefunden' });
     }
     res.status(204).send();
   } catch (error) {

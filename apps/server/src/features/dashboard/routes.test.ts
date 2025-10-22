@@ -4,7 +4,7 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../../index';
 import { getDatabaseClient } from '../../infrastructure';
 
-const TABLES = ['kommunikation', 'kalender', 'finanzen', 'kurse', 'hunde', 'kunden', 'users'] as const;
+const TABLES = ['kommunikation', 'kalender_events', 'finanzen', 'kurse', 'hunde', 'kunden', 'users'] as const;
 
 describe('dashboard routes', () => {
   beforeAll(() => {
@@ -32,16 +32,37 @@ describe('dashboard routes', () => {
     const token = registerResponse.body.token as string;
     const database = getDatabaseClient();
 
-    await database.query({ text: "INSERT INTO kunden (id) VALUES ('cust-1'), ('cust-2')" });
-    await database.query({ text: "INSERT INTO hunde (id) VALUES ('dog-1')" });
-    await database.query({ text: "INSERT INTO kurse (id) VALUES ('course-1'), ('course-2'), ('course-3')" });
+    await database.query({
+      text: "INSERT INTO kunden (id, first_name, last_name, email) VALUES ('cust-1', 'Jane', 'Doe', 'jane@example.com'), ('cust-2', 'John', 'Doe', 'john@example.com')",
+    });
+    await database.query({
+      text: "INSERT INTO hunde (id, kunde_id, name) VALUES ('dog-1', 'cust-1', 'Rex')",
+    });
+    await database.query({
+      text: `
+        INSERT INTO kurse (id, titel, start_datum)
+        VALUES
+          ('course-1', 'Course 1', current_date),
+          ('course-2', 'Course 2', current_date),
+          ('course-3', 'Course 3', current_date)
+      `,
+    });
     await database.query({
       text: `
         INSERT INTO finanzen (datum, typ, betrag_cents)
         VALUES (current_date, 'einnahme', 1000)
       `,
     });
-    await database.query({ text: "INSERT INTO kalender (id) VALUES ('event-1'), ('event-2')" });
+    const now = new Date().toISOString();
+    await database.query({
+      text: `
+        INSERT INTO kalender_events (titel, start_at, end_at, status)
+        VALUES
+          ('Event 1', $1, $1, 'geplant'),
+          ('Event 2', $2, $2, 'bestaetigt')
+      `,
+      params: [now, now],
+    });
     await database.query({ text: "INSERT INTO kommunikation (id) VALUES ('msg-1'), ('msg-2'), ('msg-3'), ('msg-4')" });
 
     const response = await agent.get('/dashboard').set('Authorization', `Bearer ${token}`);
@@ -56,6 +77,7 @@ describe('dashboard routes', () => {
       finanzenAusgaben: 0,
       kalenderCount: 2,
       kommunikationCount: 4,
+      eventsUpcoming7d: 2,
     });
   });
 });

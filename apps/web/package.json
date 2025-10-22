@@ -7,7 +7,8 @@
     "dev": "vite || echo ERR_WEB_START_001",
     "build": "vite build || echo ERR_WEB_BUILD_001",
     "preview": "vite preview || echo ERR_WEB_PREVIEW_001",
-    "test": "vitest run || echo ERR_WEB_TEST_001"
+    "test": "vitest run || echo ERR_WEB_TEST_001",
+    "e2e": "npx playwright test"
   },
   "dependencies": {
     "react": "^18.3.0",

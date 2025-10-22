@@ -35,6 +35,12 @@
       "@dogule/domain/*": [
         "packages/domain/src/*"
       ],
+      "@dogule/sdk": [
+        "packages/sdk/src/index.ts"
+      ],
+      "@dogule/sdk/*": [
+        "packages/sdk/src/*"
+      ],
       "express-rate-limit": [
         "packages/express-rate-limit/src/index.d.ts"
       ]

@@ -1,61 +1,126 @@
-import { MessageCreateInput } from '@dogule/domain';
+import { z } from 'zod';
 
-const isString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
+import {
+  ErrorCode,
+  type KommunikationCreateInput,
+  type KommunikationListFilters,
+  type KommunikationUpdateInput,
+} from '@dogule/domain';
 
-export const parseMessageCreateInput = (payload: unknown): MessageCreateInput => {
-  if (typeof payload !== 'object' || payload === null) {
-    throw new Error('Invalid message payload');
-  }
+const richtungSchema = z.enum(['eingehend', 'ausgehend']);
 
-  const { senderId, recipientId, subject, body } = payload as Record<string, unknown>;
+const basePayloadSchema = {
+  kanal: z.string().trim().min(1, ErrorCode.ERR_KOMM_INVALID_PAYLOAD),
+  richtung: richtungSchema,
+  betreff: z.string().trim().min(1, ErrorCode.ERR_KOMM_INVALID_PAYLOAD),
+  inhalt: z.string().trim().min(1, ErrorCode.ERR_KOMM_INVALID_PAYLOAD),
+  kunde_id: z.string().uuid().optional(),
+  hund_id: z.string().uuid().optional(),
+};
 
-  if (!isString(senderId) || !isString(recipientId) || !isString(subject) || !isString(body)) {
-    throw new Error('Message senderId, recipientId, subject and body are required');
-  }
+const kommunikationCreateSchema = z.object(basePayloadSchema);
+
+const kommunikationUpdateSchema = z
+  .object({
+    ...basePayloadSchema,
+  })
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, {
+    message: ErrorCode.ERR_KOMM_INVALID_PAYLOAD,
+  });
+
+const coerceQueryString = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess((value) => {
+    if (value === undefined || value === null) {
+      return undefined;
+    }
+
+    if (Array.isArray(value)) {
+      return value[0];
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : undefined;
+    }
+
+    return value;
+  }, schema.optional());
+
+const isoDateSchema = coerceQueryString(
+  z
+    .string()
+    .refine((value) => !Number.isNaN(Date.parse(value)), {
+      message: ErrorCode.ERR_KOMM_INVALID_PAYLOAD,
+    })
+);
+
+const kommunikationListQuerySchema = z.object({
+  limit: coerceQueryString(z.coerce.number().int().positive()),
+  offset: coerceQueryString(z.coerce.number().int().nonnegative()),
+  kunde_id: coerceQueryString(z.string().uuid()),
+  hund_id: coerceQueryString(z.string().uuid()),
+  kanal: coerceQueryString(z.string().trim().min(1)),
+  from: isoDateSchema,
+  to: isoDateSchema,
+});
+
+export const parseKommunikationCreateInput = (payload: unknown): KommunikationCreateInput => {
+  const parsed = kommunikationCreateSchema.parse(payload);
 
   return {
-    senderId,
-    recipientId,
-    subject,
-    body,
+    kanal: parsed.kanal,
+    richtung: parsed.richtung,
+    betreff: parsed.betreff,
+    inhalt: parsed.inhalt,
+    kundeId: parsed.kunde_id,
+    hundId: parsed.hund_id,
   };
 };
 
-export const parseMessageUpdateInput = (payload: unknown): Partial<MessageCreateInput> => {
-  if (typeof payload !== 'object' || payload === null) {
-    throw new Error('Invalid message payload');
+export const parseKommunikationUpdateInput = (payload: unknown): KommunikationUpdateInput => {
+  const parsed = kommunikationUpdateSchema.parse(payload);
+  const result: KommunikationUpdateInput = {};
+
+  if (parsed.kanal !== undefined) {
+    result.kanal = parsed.kanal;
   }
 
-  const { senderId, recipientId, subject, body } = payload as Record<string, unknown>;
-  const result: Partial<MessageCreateInput> = {};
-
-  if (senderId !== undefined) {
-    if (!isString(senderId)) {
-      throw new Error('Message senderId must be a string');
-    }
-    result.senderId = senderId;
+  if (parsed.richtung !== undefined) {
+    result.richtung = parsed.richtung;
   }
 
-  if (recipientId !== undefined) {
-    if (!isString(recipientId)) {
-      throw new Error('Message recipientId must be a string');
-    }
-    result.recipientId = recipientId;
+  if (parsed.betreff !== undefined) {
+    result.betreff = parsed.betreff;
   }
 
-  if (subject !== undefined) {
-    if (!isString(subject)) {
-      throw new Error('Message subject must be a string');
-    }
-    result.subject = subject;
+  if (parsed.inhalt !== undefined) {
+    result.inhalt = parsed.inhalt;
   }
 
-  if (body !== undefined) {
-    if (!isString(body)) {
-      throw new Error('Message body must be a string');
-    }
-    result.body = body;
+  if (parsed.kunde_id !== undefined) {
+    result.kundeId = parsed.kunde_id;
+  }
+
+  if (parsed.hund_id !== undefined) {
+    result.hundId = parsed.hund_id;
   }
 
   return result;
+};
+
+export const parseKommunikationListQuery = (
+  query: Record<string, unknown>
+): KommunikationListFilters => {
+  const parsed = kommunikationListQuerySchema.parse(query);
+
+  return {
+    limit: parsed.limit,
+    offset: parsed.offset,
+    kundeId: parsed.kunde_id,
+    hundId: parsed.hund_id,
+    kanal: parsed.kanal,
+    from: parsed.from,
+    to: parsed.to,
+  };
 };

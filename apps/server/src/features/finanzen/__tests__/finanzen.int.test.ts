@@ -239,7 +239,7 @@ describe('finanzen integration', () => {
       }),
     ).rejects.toThrowError(ErrorCode.ERR_FINANZ_CREATE_001);
 
-    expect(errorSpy).toHaveBeenCalledWith('[ERROR]', ErrorCode.ERR_FINANZ_CREATE_001, expect.any(Error));
+    expect(errorSpy).toHaveBeenCalledWith('ERR_FINANZ_CREATE_001', expect.any(Error));
     errorSpy.mockRestore();
   });
 });
