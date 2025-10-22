@@ -125,6 +125,11 @@ export class DatabaseClient {
       }
 
       const kundenIdType = this.mode === 'postgres' ? 'UUID' : 'TEXT';
+      const userIdType = this.mode === 'postgres' ? 'UUID' : 'TEXT';
+      const userIdDefault = this.mode === 'postgres' ? ' DEFAULT gen_random_uuid()' : '';
+      const refreshIdDefault = this.mode === 'postgres' ? ' DEFAULT gen_random_uuid()' : '';
+      const uuidType = this.mode === 'postgres' ? 'UUID' : 'TEXT';
+      const uuidDefault = ' DEFAULT gen_random_uuid()';
 
       const isMemory = this.mode === 'memory';
       const kundenColumns = `
@@ -140,18 +145,27 @@ export class DatabaseClient {
 
       statements.push(`
         CREATE TABLE IF NOT EXISTS users (
-          id TEXT PRIMARY KEY,
+          id ${userIdType} PRIMARY KEY${userIdDefault},
           email TEXT UNIQUE NOT NULL,
           hashed_password TEXT NOT NULL,
           role TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS auth_refresh_tokens (
+          id ${uuidType} PRIMARY KEY${refreshIdDefault},
+          user_id ${userIdType} NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          hashed_token TEXT UNIQUE NOT NULL,
+          expires_at TIMESTAMPTZ NOT NULL,
+          revoked_at TIMESTAMPTZ
+        );
+        CREATE INDEX IF NOT EXISTS idx_auth_refresh_tokens_user_id ON auth_refresh_tokens(user_id);
+        CREATE INDEX IF NOT EXISTS idx_auth_refresh_tokens_expires_at ON auth_refresh_tokens(expires_at);
         CREATE TABLE IF NOT EXISTS kunden (
 ${kundenColumns}
         );
         CREATE INDEX IF NOT EXISTS idx_kunden_created_at ON kunden(created_at);
         DROP TABLE IF EXISTS hunde;
         CREATE TABLE IF NOT EXISTS hunde (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          id ${uuidType} PRIMARY KEY${uuidDefault},
           created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           kunde_id ${kundenIdType} NOT NULL REFERENCES kunden(id) ON DELETE CASCADE,
@@ -163,7 +177,7 @@ ${kundenColumns}
         CREATE INDEX IF NOT EXISTS idx_hunde_kunde_id ON hunde(kunde_id);
         CREATE INDEX IF NOT EXISTS idx_hunde_created_at ON hunde(created_at);
         CREATE TABLE IF NOT EXISTS kurse (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          id ${uuidType} PRIMARY KEY${uuidDefault},
           created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           titel TEXT NOT NULL,
@@ -177,7 +191,7 @@ ${kundenColumns}
         );
         CREATE INDEX IF NOT EXISTS idx_kurse_start ON kurse(start_datum);
         CREATE TABLE IF NOT EXISTS finanzen (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          id ${uuidType} PRIMARY KEY${uuidDefault},
           created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           datum DATE NOT NULL,

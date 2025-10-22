@@ -32,9 +32,21 @@ describe('dashboard routes', () => {
     const token = registerResponse.body.token as string;
     const database = getDatabaseClient();
 
-    await database.query({ text: "INSERT INTO kunden (id) VALUES ('cust-1'), ('cust-2')" });
-    await database.query({ text: "INSERT INTO hunde (id) VALUES ('dog-1')" });
-    await database.query({ text: "INSERT INTO kurse (id) VALUES ('course-1'), ('course-2'), ('course-3')" });
+    await database.query({
+      text: "INSERT INTO kunden (id, first_name, last_name, email) VALUES ('cust-1', 'Jane', 'Doe', 'jane@example.com'), ('cust-2', 'John', 'Doe', 'john@example.com')",
+    });
+    await database.query({
+      text: "INSERT INTO hunde (id, kunde_id, name) VALUES ('dog-1', 'cust-1', 'Rex')",
+    });
+    await database.query({
+      text: `
+        INSERT INTO kurse (id, titel, start_datum)
+        VALUES
+          ('course-1', 'Course 1', current_date),
+          ('course-2', 'Course 2', current_date),
+          ('course-3', 'Course 3', current_date)
+      `,
+    });
     await database.query({
       text: `
         INSERT INTO finanzen (datum, typ, betrag_cents)

@@ -86,7 +86,7 @@ export class DashboardService {
       summary.finanzenEinnahmen = einnahmen;
       summary.finanzenAusgaben = ausgaben;
     } catch (error) {
-      logError('ERR_DASHBOARD_001', error);
+      logError(ErrorCode.ERR_DASHBOARD_001, error);
       summary.finanzenEinnahmen = 0;
       summary.finanzenAusgaben = 0;
     }
