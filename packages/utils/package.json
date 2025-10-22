@@ -13,6 +13,12 @@
     },
     "./logger": {
       "import": "./src/logger.ts"
+    },
+    "./env": {
+      "import": "./src/env.ts"
     }
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
   }
 }

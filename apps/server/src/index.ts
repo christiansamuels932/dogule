@@ -1,11 +1,10 @@
-import { config as loadEnv } from 'dotenv';
 import express from 'express';
 import { ApolloServer } from 'apollo-server-express';
 
 import { ErrorCode, LogCode } from '@dogule/domain';
-import { logError, logInfo } from '@dogule/utils';
+import { bootstrapEnv, logError, logInfo } from '@dogule/utils';
 
-loadEnv();
+bootstrapEnv();
 
 import {
   authMiddleware,
