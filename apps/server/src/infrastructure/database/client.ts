@@ -67,6 +67,12 @@ export class DatabaseClient {
           implementation: () => randomUUID(),
           impure: true,
         });
+        this.memoryDb.public.registerFunction({
+          name: 'random_uuid_text',
+          returns: 'text' as unknown as DataType,
+          implementation: () => randomUUID(),
+          impure: true,
+        });
         const { Pool: MemoryPool } = this.memoryDb.adapters.createPg();
         this.pool = new MemoryPool() as unknown as Pool;
       } catch (error) {
@@ -124,16 +130,17 @@ export class DatabaseClient {
         statements.push('CREATE EXTENSION IF NOT EXISTS pgcrypto;');
       }
 
-      const kundenIdType = this.mode === 'postgres' ? 'UUID' : 'TEXT';
-      const userIdType = this.mode === 'postgres' ? 'UUID' : 'TEXT';
-      const userIdDefault = this.mode === 'postgres' ? ' DEFAULT gen_random_uuid()' : '';
-      const refreshIdDefault = this.mode === 'postgres' ? ' DEFAULT gen_random_uuid()' : '';
-      const uuidType = this.mode === 'postgres' ? 'UUID' : 'TEXT';
-      const uuidDefault = ' DEFAULT gen_random_uuid()';
-
+      const isPostgres = this.mode === 'postgres';
       const isMemory = this.mode === 'memory';
+      const uuidType = isPostgres ? 'UUID' : 'TEXT';
+      const uuidDefault = isPostgres ? ' DEFAULT gen_random_uuid()' : ' DEFAULT random_uuid_text()';
+      const kundenIdType = uuidType;
+      const kundenIdDefault = uuidDefault;
+      const userIdType = uuidType;
+      const userIdDefault = uuidDefault;
+      const refreshIdDefault = uuidDefault;
       const kundenColumns = `
-          id ${kundenIdType} PRIMARY KEY DEFAULT gen_random_uuid(),
+          id ${kundenIdType} PRIMARY KEY${kundenIdDefault},
           created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           first_name TEXT${isMemory ? '' : ' NOT NULL'},
@@ -205,7 +212,7 @@ ${kundenColumns}
         CREATE INDEX IF NOT EXISTS idx_finanzen_typ ON finanzen(typ);
         DROP TABLE IF EXISTS kalender;
         CREATE TABLE IF NOT EXISTS kalender_events (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          id ${uuidType} PRIMARY KEY${uuidDefault},
           created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           titel TEXT NOT NULL,
@@ -214,7 +221,7 @@ ${kundenColumns}
           end_at TIMESTAMPTZ NOT NULL,
           ort TEXT,
           kunde_id ${kundenIdType} REFERENCES kunden(id) ON DELETE SET NULL,
-          hund_id UUID REFERENCES hunde(id) ON DELETE SET NULL,
+          hund_id ${uuidType} REFERENCES hunde(id) ON DELETE SET NULL,
           status TEXT NOT NULL DEFAULT 'geplant' CHECK (status IN ('geplant','bestaetigt','abgesagt')),
           CHECK (end_at >= start_at)
         );
@@ -222,15 +229,15 @@ ${kundenColumns}
         CREATE INDEX IF NOT EXISTS idx_events_kunde ON kalender_events(kunde_id);
         CREATE INDEX IF NOT EXISTS idx_events_hund ON kalender_events(hund_id);
         CREATE TABLE IF NOT EXISTS kommunikation (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          id ${uuidType} PRIMARY KEY${uuidDefault},
           created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-          kanal TEXT NOT NULL,
-          richtung TEXT NOT NULL,
-          betreff TEXT NOT NULL,
-          inhalt TEXT NOT NULL,
+          kanal TEXT${isMemory ? '' : ' NOT NULL'},
+          richtung TEXT${isMemory ? '' : ' NOT NULL'},
+          betreff TEXT${isMemory ? '' : ' NOT NULL'},
+          inhalt TEXT${isMemory ? '' : ' NOT NULL'},
           kunde_id ${kundenIdType} REFERENCES kunden(id) ON DELETE SET NULL,
-          hund_id UUID REFERENCES hunde(id) ON DELETE SET NULL
+          hund_id ${uuidType} REFERENCES hunde(id) ON DELETE SET NULL
         );
         CREATE INDEX IF NOT EXISTS idx_kommunikation_kunde_id ON kommunikation(kunde_id);
         CREATE INDEX IF NOT EXISTS idx_kommunikation_hund_id ON kommunikation(hund_id);
