@@ -2,6 +2,7 @@ import { config as loadEnv } from 'dotenv';
 import express from 'express';
 import { ApolloServer } from 'apollo-server-express';
 
+import { ErrorCode, LogCode } from '@dogule/domain';
 import { logError, logInfo } from '@dogule/utils';
 
 loadEnv();
@@ -11,6 +12,7 @@ import {
   errorHandler,
   getDatabaseClient,
   loadConfig,
+  createRateLimiter,
   requestLogger,
 } from './infrastructure';
 import authRouter from './features/auth/routes';
@@ -22,6 +24,7 @@ import kalenderRouter from './features/kalender/routes';
 import kommunikationRouter from './features/kommunikation/routes';
 import dashboardRouter from './features/dashboard/routes';
 import { resolvers, typeDefs } from './graphql/schema';
+import { openApiDocument } from './openapi/spec';
 
 const createApp = async () => {
   const app = express();
@@ -32,11 +35,34 @@ const createApp = async () => {
   app.use(express.json());
   app.use(requestLogger);
 
-  app.get('/healthz', (_req, res) => {
-    res.json({ status: 'ok' });
+  app.get('/health', (_req, res) => {
+    const ts = new Date().toISOString();
+    logInfo(LogCode.LOG_HEALTH_OK_001);
+    res.json({ ok: true, ts });
   });
 
-  app.use('/auth', authRouter);
+  app.get('/ready', async (_req, res) => {
+    try {
+      await databaseClient.query({ text: 'SELECT 1' });
+      const ts = new Date().toISOString();
+      logInfo(LogCode.LOG_HEALTH_OK_001);
+      res.json({ ok: true, ts });
+    } catch (error) {
+      logError(ErrorCode.ERR_HEALTH_DB_001, error);
+      res.status(503).json({ message: ErrorCode.ERR_HEALTH_DB_001 });
+    }
+  });
+
+  app.get('/docs.json', (_req, res) => {
+    res.json(openApiDocument);
+  });
+
+  const rateLimitConfig = config.rateLimit;
+  const authRateLimiter = createRateLimiter(rateLimitConfig);
+  const graphqlRateLimiter = createRateLimiter(rateLimitConfig);
+
+  app.use('/auth', authRateLimiter, authRouter);
+  app.use('/graphql', graphqlRateLimiter);
   app.use(authMiddleware);
 
   app.use('/api/kunden', kundenRouter);

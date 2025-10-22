@@ -1,6 +1,7 @@
 import { RequestHandler } from 'express';
 import jwt, { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
 
+import { ErrorCode } from '@dogule/domain';
 import { logWarn } from '@dogule/utils';
 
 import { loadConfig } from '../config';
@@ -25,7 +26,7 @@ export const authMiddleware: RequestHandler = (req, res, next) => {
 
   const authorization = req.headers.authorization;
   if (!authorization || !authorization.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'ERR_AUTH_401' });
+    return res.status(401).json({ message: ErrorCode.ERR_AUTH_401 });
   }
 
   const token = authorization.slice('Bearer '.length).trim();
@@ -34,7 +35,7 @@ export const authMiddleware: RequestHandler = (req, res, next) => {
     const payload = jwt.verify(token, loadConfig().jwtSecret);
 
     if (typeof payload === 'string') {
-      return res.status(401).json({ message: 'ERR_AUTH_INVALID_001' });
+      return res.status(401).json({ message: ErrorCode.ERR_AUTH_INVALID_001 });
     }
 
     const request = req as typeof req & AuthenticatedRequest;
@@ -52,13 +53,13 @@ export const authMiddleware: RequestHandler = (req, res, next) => {
     }
 
     if (error instanceof TokenExpiredError) {
-      return res.status(401).json({ message: 'ERR_AUTH_EXPIRED_001' });
+      return res.status(401).json({ message: ErrorCode.ERR_AUTH_EXPIRED_001 });
     }
 
     if (error instanceof JsonWebTokenError) {
-      return res.status(401).json({ message: 'ERR_AUTH_INVALID_001' });
+      return res.status(401).json({ message: ErrorCode.ERR_AUTH_INVALID_001 });
     }
 
-    return res.status(401).json({ message: 'ERR_AUTH_INVALID_001' });
+    return res.status(401).json({ message: ErrorCode.ERR_AUTH_INVALID_001 });
   }
 };

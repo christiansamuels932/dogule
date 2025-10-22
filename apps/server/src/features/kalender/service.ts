@@ -3,7 +3,7 @@ import {
   CalendarEventCreateInput,
   PaginatedResult,
   PaginationQuery,
-} from '../../../../../packages/domain';
+} from '@dogule/domain';
 import { KalenderRepository } from './repository';
 
 export class KalenderService {

@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ErrorCode } from '@dogule/domain';
+
 import { App } from './App';
 
 describe('App', () => {
@@ -116,7 +118,7 @@ describe('App', () => {
 
     render(<App />);
 
-    await waitFor(() => expect(screen.getByText('ERR_SESSION_LOAD_001')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(ErrorCode.ERR_SESSION_LOAD_001)).toBeInTheDocument());
 
     expect(localStorage.getItem('dogule_token')).toBeNull();
     expect(screen.getByRole('heading', { name: /login/i })).toBeInTheDocument();

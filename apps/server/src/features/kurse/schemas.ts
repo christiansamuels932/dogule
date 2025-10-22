@@ -1,4 +1,4 @@
-import { CourseCreateInput } from '../../../../../packages/domain';
+import { CourseCreateInput } from '@dogule/domain';
 
 const isString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
 

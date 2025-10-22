@@ -6,7 +6,7 @@ import {
   FinanzCreateInput,
   CalendarEventCreateInput,
   MessageCreateInput,
-} from '../../../../packages/domain';
+} from '@dogule/domain';
 import { KundenService } from '../features/kunden/service';
 import { HundeService } from '../features/hunde/service';
 import { KurseService } from '../features/kurse/service';

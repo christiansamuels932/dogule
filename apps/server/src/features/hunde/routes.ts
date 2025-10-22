@@ -1,6 +1,8 @@
 import { Router, Response } from 'express';
 import { ZodError } from 'zod';
 
+import { ErrorCode } from '@dogule/domain';
+
 import { HundeService } from './service';
 import { parseHundeCreateInput, parseHundeUpdateInput } from './schemas';
 
@@ -10,7 +12,7 @@ const service = new HundeService();
 const handleValidationError = (error: unknown, res: Response) => {
   if (error instanceof ZodError) {
     res.status(400).json({
-      message: 'ERR_HUNDE_INVALID_PAYLOAD',
+      message: ErrorCode.ERR_HUNDE_INVALID_PAYLOAD,
       details: error.flatten(),
     });
     return true;

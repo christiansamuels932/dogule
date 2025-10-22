@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { ErrorCode } from '@dogule/domain';
+
 import { DashboardService } from './service';
 
 describe('DashboardService', () => {

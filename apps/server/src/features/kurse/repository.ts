@@ -1,4 +1,4 @@
-import { Course, CourseCreateInput, PaginatedResult, PaginationQuery } from '../../../../../packages/domain';
+import { Course, CourseCreateInput, PaginatedResult, PaginationQuery } from '@dogule/domain';
 
 let sequence = 0;
 const generateId = () => {

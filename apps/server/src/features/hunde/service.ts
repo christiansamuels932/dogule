@@ -1,4 +1,4 @@
-import { Dog, DogCreateInput } from '../../../../../packages/domain';
+import { Dog, DogCreateInput } from '@dogule/domain';
 import { HundeRepository } from './repository';
 
 interface ListParams {

@@ -147,3 +147,5 @@ export interface DashboardSummary {
   kalenderCount: number;
   kommunikationCount: number;
 }
+
+export { ErrorCode, LogCode } from './error-codes';

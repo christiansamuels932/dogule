@@ -1,4 +1,6 @@
-import { Dog, DogCreateInput } from '../../../../../packages/domain';
+import { logError, logInfo } from '@dogule/utils';
+
+import { Dog, DogCreateInput, ErrorCode, LogCode } from '@dogule/domain';
 import { getDatabaseClient } from '../../infrastructure';
 import type { DatabaseClient } from '../../infrastructure';
 
@@ -36,11 +38,11 @@ export class HundeRepository {
       });
 
       const hund = this.mapRow(rows[0]);
-      console.info('LOG_HUNDE_CREATE_001', hund.id);
+      logInfo(LogCode.LOG_HUNDE_CREATE_001, hund.id);
       return hund;
     } catch (error) {
-      console.error('ERR_HUNDE_CREATE_001', error);
-      throw new Error('ERR_HUNDE_CREATE_001');
+      logError(ErrorCode.ERR_HUNDE_CREATE_001, error);
+      throw new Error(ErrorCode.ERR_HUNDE_CREATE_001);
     }
   }
 
@@ -58,8 +60,8 @@ export class HundeRepository {
       const row = rows[0];
       return row ? this.mapRow(row) : undefined;
     } catch (error) {
-      console.error('ERR_HUNDE_READ_001', error);
-      throw new Error('ERR_HUNDE_READ_001');
+      logError(ErrorCode.ERR_HUNDE_READ_001, error);
+      throw new Error(ErrorCode.ERR_HUNDE_READ_001);
     }
   }
 
@@ -109,8 +111,8 @@ export class HundeRepository {
         offset,
       };
     } catch (error) {
-      console.error('ERR_HUNDE_READ_001', error);
-      throw new Error('ERR_HUNDE_READ_001');
+      logError(ErrorCode.ERR_HUNDE_READ_001, error);
+      throw new Error(ErrorCode.ERR_HUNDE_READ_001);
     }
   }
 
@@ -172,11 +174,11 @@ export class HundeRepository {
       }
 
       const hund = this.mapRow(row);
-      console.info('LOG_HUNDE_UPDATE_001', hund.id);
+      logInfo(LogCode.LOG_HUNDE_UPDATE_001, hund.id);
       return hund;
     } catch (error) {
-      console.error('ERR_HUNDE_UPDATE_001', error);
-      throw new Error('ERR_HUNDE_UPDATE_001');
+      logError(ErrorCode.ERR_HUNDE_UPDATE_001, error);
+      throw new Error(ErrorCode.ERR_HUNDE_UPDATE_001);
     }
   }
 
@@ -193,13 +195,13 @@ export class HundeRepository {
 
       const deleted = rows.length > 0;
       if (deleted) {
-        console.info('LOG_HUNDE_DELETE_001', id);
+        logInfo(LogCode.LOG_HUNDE_DELETE_001, id);
       }
 
       return deleted;
     } catch (error) {
-      console.error('ERR_HUNDE_DELETE_001', error);
-      throw new Error('ERR_HUNDE_DELETE_001');
+      logError(ErrorCode.ERR_HUNDE_DELETE_001, error);
+      throw new Error(ErrorCode.ERR_HUNDE_DELETE_001);
     }
   }
 
@@ -211,8 +213,8 @@ export class HundeRepository {
 
       return rows[0]?.count ?? 0;
     } catch (error) {
-      console.error('ERR_HUNDE_READ_001', error);
-      throw new Error('ERR_HUNDE_READ_001');
+      logError(ErrorCode.ERR_HUNDE_READ_001, error);
+      throw new Error(ErrorCode.ERR_HUNDE_READ_001);
     }
   }
 

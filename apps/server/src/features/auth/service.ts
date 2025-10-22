@@ -1,6 +1,8 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
+import { ErrorCode } from '@dogule/domain';
+
 import { loadConfig } from '../../infrastructure';
 import { AuthRepository, UserRecord } from './repository';
 import { LoginInput, RegisterInput } from './schemas';
@@ -22,7 +24,7 @@ export class AuthService {
     const role = payload.role ?? 'user';
     const existing = await this.repository.findByEmail(payload.email);
     if (existing) {
-      const error = new Error('ERR_AUTH_EMAIL_EXISTS');
+      const error = new Error(ErrorCode.ERR_AUTH_EMAIL_EXISTS);
       (error as Error & { status?: number }).status = 409;
       throw error;
     }
@@ -36,14 +38,14 @@ export class AuthService {
   async login(payload: LoginInput): Promise<AuthResult> {
     const existing = await this.repository.findByEmail(payload.email);
     if (!existing) {
-      const error = new Error('ERR_AUTH_LOGIN_001');
+      const error = new Error(ErrorCode.ERR_AUTH_LOGIN_001);
       (error as Error & { status?: number }).status = 401;
       throw error;
     }
 
     const passwordMatches = await bcrypt.compare(payload.password, existing.hashedPassword);
     if (!passwordMatches) {
-      const error = new Error('ERR_AUTH_LOGIN_001');
+      const error = new Error(ErrorCode.ERR_AUTH_LOGIN_001);
       (error as Error & { status?: number }).status = 401;
       throw error;
     }

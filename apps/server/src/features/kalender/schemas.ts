@@ -1,4 +1,4 @@
-import { CalendarEventCreateInput } from '../../../../../packages/domain';
+import { CalendarEventCreateInput } from '@dogule/domain';
 
 const isString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
 

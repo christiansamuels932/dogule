@@ -1,4 +1,4 @@
-import { MessageCreateInput } from '../../../../../packages/domain';
+import { MessageCreateInput } from '@dogule/domain';
 
 const isString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
 
