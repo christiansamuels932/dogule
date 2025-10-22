@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { ErrorCode } from '@dogule/domain';
+import * as logger from '@dogule/utils';
 
 import { DashboardService } from './service';
 
@@ -18,12 +19,16 @@ describe('DashboardService', () => {
     const finanzenRepository = {
       sum: vi.fn().mockRejectedValue(new Error('sum failed')),
     };
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const kommunikationRepository = {
+      count: vi.fn().mockRejectedValue(new Error('kommunikation failed')),
+    };
+    const logSpy = vi.spyOn(logger, 'logError').mockImplementation(() => undefined);
     const service = new DashboardService(
       database as unknown as { query: typeof database.query },
       kundenRepository as unknown as { count: () => Promise<number> },
       hundeRepository as unknown as { count: () => Promise<number> },
       finanzenRepository as unknown as { sum: () => Promise<number> },
+      kommunikationRepository as unknown as { count: () => Promise<number> },
     );
 
     const summary = await service.getSummary();
@@ -39,9 +44,8 @@ describe('DashboardService', () => {
       kommunikationCount: 0,
     });
     expect(database.query).toHaveBeenCalled();
-    expect(consoleSpy).toHaveBeenCalledWith('ERR_DASHBOARD_001', expect.any(Error));
-    expect(consoleSpy).toHaveBeenCalledWith('[ERROR]', 'ERR_DASHBOARD_001', expect.any(Error));
+    expect(logSpy).toHaveBeenCalledWith(ErrorCode.ERR_DASHBOARD_001, expect.any(Error));
 
-    consoleSpy.mockRestore();
+    logSpy.mockRestore();
   });
 });

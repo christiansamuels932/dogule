@@ -5,7 +5,9 @@ import {
   CourseCreateInput,
   FinanzCreateInput,
   CalendarEventCreateInput,
-  MessageCreateInput,
+  KommunikationCreateInput,
+  KommunikationUpdateInput,
+  KommunikationListFilters,
 } from '@dogule/domain';
 import { KundenService } from '../features/kunden/service';
 import { HundeService } from '../features/hunde/service';
@@ -126,19 +128,49 @@ export const typeDefs = gql`
 
   type Nachricht {
     id: ID!
-    senderId: String!
-    recipientId: String!
-    subject: String!
-    body: String!
-    sentAt: String!
-    readAt: String
+    kanal: String!
+    richtung: String!
+    betreff: String!
+    inhalt: String!
+    kundeId: String
+    hundId: String
+    createdAt: String!
+    updatedAt: String!
   }
 
   input NachrichtInput {
-    senderId: String!
-    recipientId: String!
-    subject: String!
-    body: String!
+    kanal: String!
+    richtung: String!
+    betreff: String!
+    inhalt: String!
+    kundeId: String
+    hundId: String
+  }
+
+  input NachrichtUpdateInput {
+    kanal: String
+    richtung: String
+    betreff: String
+    inhalt: String
+    kundeId: String
+    hundId: String
+  }
+
+  input NachrichtFilterInput {
+    kundeId: String
+    hundId: String
+    kanal: String
+    from: String
+    to: String
+    limit: Int
+    offset: Int
+  }
+
+  type NachrichtList {
+    data: [Nachricht!]!
+    total: Int!
+    limit: Int!
+    offset: Int!
   }
 
   type Query {
@@ -147,7 +179,7 @@ export const typeDefs = gql`
     kurse: [Kurs!]!
     finanzen(from: String, to: String, typ: String): [Finanz!]!
     kalender: [KalenderEvent!]!
-    nachrichten: [Nachricht!]!
+    nachrichten(filters: NachrichtFilterInput): NachrichtList!
   }
 
   type Mutation {
@@ -157,6 +189,8 @@ export const typeDefs = gql`
     createFinanz(input: FinanzInput!): Finanz!
     createKalenderEvent(input: KalenderEventInput!): KalenderEvent!
     createNachricht(input: NachrichtInput!): Nachricht!
+    updateNachricht(id: ID!, input: NachrichtUpdateInput!): Nachricht!
+    deleteNachricht(id: ID!): Boolean!
   }
 `;
 
@@ -190,7 +224,54 @@ export const resolvers = {
       return finanzenService.list(filters).then((result) => result.data);
     },
     kalender: () => kalenderService.list().then((result) => result.data),
-    nachrichten: () => kommunikationService.list().then((result) => result.data),
+    nachrichten: (
+      _: unknown,
+      args: {
+        filters?: {
+          kundeId?: string;
+          hundId?: string;
+          kanal?: string;
+          from?: string;
+          to?: string;
+          limit?: number;
+          offset?: number;
+        };
+      },
+    ) => {
+      const filters: KommunikationListFilters = {};
+
+      if (args.filters) {
+        if (args.filters.kundeId) {
+          filters.kundeId = args.filters.kundeId;
+        }
+
+        if (args.filters.hundId) {
+          filters.hundId = args.filters.hundId;
+        }
+
+        if (args.filters.kanal) {
+          filters.kanal = args.filters.kanal;
+        }
+
+        if (args.filters.from) {
+          filters.from = args.filters.from;
+        }
+
+        if (args.filters.to) {
+          filters.to = args.filters.to;
+        }
+
+        if (typeof args.filters.limit === 'number') {
+          filters.limit = args.filters.limit;
+        }
+
+        if (typeof args.filters.offset === 'number') {
+          filters.offset = args.filters.offset;
+        }
+      }
+
+      return kommunikationService.list(filters);
+    },
   },
   Mutation: {
     createKunde: (_: unknown, { input }: { input: CustomerCreateInput }) => kundenService.create(input),
@@ -200,7 +281,19 @@ export const resolvers = {
       finanzenService.create(input),
     createKalenderEvent: (_: unknown, { input }: { input: CalendarEventCreateInput }) =>
       kalenderService.create(input),
-    createNachricht: (_: unknown, { input }: { input: MessageCreateInput }) =>
+    createNachricht: (_: unknown, { input }: { input: KommunikationCreateInput }) =>
       kommunikationService.create(input),
+    updateNachricht: (
+      _: unknown,
+      { id, input }: { id: string; input: KommunikationUpdateInput },
+    ) =>
+      kommunikationService.update(id, input).then((result) => {
+        if (!result) {
+          throw new Error('Kommunikationseintrag nicht gefunden');
+        }
+
+        return result;
+      }),
+    deleteNachricht: (_: unknown, { id }: { id: string }) => kommunikationService.remove(id),
   },
 };

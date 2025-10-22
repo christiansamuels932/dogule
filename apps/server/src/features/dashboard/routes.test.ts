@@ -42,7 +42,16 @@ describe('dashboard routes', () => {
       `,
     });
     await database.query({ text: "INSERT INTO kalender (id) VALUES ('event-1'), ('event-2')" });
-    await database.query({ text: "INSERT INTO kommunikation (id) VALUES ('msg-1'), ('msg-2'), ('msg-3'), ('msg-4')" });
+    await database.query({
+      text: `
+        INSERT INTO kommunikation (kanal, richtung, betreff, inhalt, kunde_id, hund_id)
+        VALUES
+          ('email', 'eingehend', 'Subject 1', 'Body 1', 'cust-1', 'dog-1'),
+          ('telefon', 'ausgehend', 'Subject 2', 'Body 2', 'cust-2', NULL),
+          ('email', 'eingehend', 'Subject 3', 'Body 3', 'cust-1', 'dog-1'),
+          ('sms', 'ausgehend', 'Subject 4', 'Body 4', NULL, NULL)
+      `,
+    });
 
     const response = await agent.get('/dashboard').set('Authorization', `Bearer ${token}`);
 

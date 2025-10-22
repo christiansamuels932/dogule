@@ -6,16 +6,12 @@ import type { DatabaseClient } from '../../infrastructure';
 import { KundenRepository } from '../kunden/repository';
 import { HundeRepository } from '../hunde/repository';
 import { FinanzenRepository } from '../finanzen/repository';
-import { logError } from '@dogule/utils';
+import { KommunikationRepository } from '../kommunikation/repository';
 
-const SUMMARY_QUERIES: Record<
-  'kurseCount' | 'finanzenCount' | 'kalenderCount' | 'kommunikationCount',
-  string
-> = {
+const SUMMARY_QUERIES: Record<'kurseCount' | 'finanzenCount' | 'kalenderCount', string> = {
   kurseCount: 'SELECT COUNT(*)::int AS count FROM kurse',
   finanzenCount: 'SELECT COUNT(*)::int AS count FROM finanzen',
   kalenderCount: 'SELECT COUNT(*)::int AS count FROM kalender',
-  kommunikationCount: 'SELECT COUNT(*)::int AS count FROM kommunikation',
 };
 
 type Database = Pick<DatabaseClient, 'query'>;
@@ -37,6 +33,7 @@ export class DashboardService {
     private readonly kundenRepository = new KundenRepository(),
     private readonly hundeRepository = new HundeRepository(),
     private readonly finanzenRepository = new FinanzenRepository(),
+    private readonly kommunikationRepository = new KommunikationRepository(),
   ) {}
 
   async getSummary(): Promise<DashboardSummary> {
@@ -57,7 +54,7 @@ export class DashboardService {
     }
 
     for (const [key, query] of Object.entries(SUMMARY_QUERIES) as Array<
-      [Exclude<keyof DashboardSummary, 'kundenCount' | 'hundeCount'>, string]
+      [Exclude<keyof DashboardSummary, 'kundenCount' | 'hundeCount' | 'kommunikationCount'>, string]
     >) {
       try {
         const rows = await this.database.query<{ count: number }>({ text: query });
@@ -66,6 +63,13 @@ export class DashboardService {
         logError(ErrorCode.ERR_DASHBOARD_001, error);
         summary[key] = 0;
       }
+    }
+
+    try {
+      summary.kommunikationCount = await this.kommunikationRepository.count();
+    } catch (error) {
+      logError(ErrorCode.ERR_DASHBOARD_001, error);
+      summary.kommunikationCount = 0;
     }
 
     const now = new Date();

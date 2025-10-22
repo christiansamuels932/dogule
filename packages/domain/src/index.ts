@@ -108,21 +108,46 @@ export interface CalendarEventCreateInput {
   relatedDogId?: string;
 }
 
-export interface Message {
+export type KommunikationRichtung = 'eingehend' | 'ausgehend';
+
+export interface Kommunikation {
   id: string;
-  senderId: string;
-  recipientId: string;
-  subject: string;
-  body: string;
-  sentAt: string;
-  readAt?: string;
+  kanal: string;
+  richtung: KommunikationRichtung;
+  betreff: string;
+  inhalt: string;
+  kundeId?: string;
+  hundId?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface MessageCreateInput {
-  senderId: string;
-  recipientId: string;
-  subject: string;
-  body: string;
+export interface KommunikationCreateInput {
+  kanal: string;
+  richtung: KommunikationRichtung;
+  betreff: string;
+  inhalt: string;
+  kundeId?: string;
+  hundId?: string;
+}
+
+export type KommunikationUpdateInput = Partial<KommunikationCreateInput>;
+
+export interface KommunikationListFilters {
+  limit?: number;
+  offset?: number;
+  kundeId?: string;
+  hundId?: string;
+  kanal?: string;
+  from?: string;
+  to?: string;
+}
+
+export interface KommunikationListResult {
+  data: Kommunikation[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 export interface PaginationQuery {
