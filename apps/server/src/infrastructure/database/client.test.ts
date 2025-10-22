@@ -87,6 +87,9 @@ const restoreEnv = () => {
   process.env = { ...ORIGINAL_ENV };
 };
 
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 describe('DatabaseClient ensurePool', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -216,5 +219,74 @@ describe('DatabaseClient ensurePool', () => {
     await expect(client.connect()).rejects.toThrowError(ErrorCode.ERR_DB_LIVENESS_001);
     expect(client.pool).toBeUndefined();
     expect(errorSpy).toHaveBeenCalledWith(ErrorCode.ERR_DB_LIVENESS_001, expect.any(Error));
+  });
+
+  it('supports UUID defaults in pg-mem tables', async () => {
+    process.env.NODE_ENV = 'test';
+    delete process.env.DATABASE_URL;
+
+    const { createDatabaseClient } = await import('./client');
+
+    const client = createDatabaseClient();
+    await client.connect();
+
+    await client.query({
+      text: `
+        CREATE TABLE IF NOT EXISTS test_uuid (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          created_at TIMESTAMPTZ DEFAULT now()
+        );
+      `,
+    });
+
+    const inserted = await client.query<{ id: string }>({
+      text: 'INSERT INTO test_uuid DEFAULT VALUES RETURNING id;',
+    });
+
+    expect(inserted).toHaveLength(1);
+    expect(inserted[0]?.id).toMatch(UUID_REGEX);
+
+    const rows = await client.query<{ id: string }>({
+      text: 'SELECT id FROM test_uuid;',
+    });
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.id).toMatch(UUID_REGEX);
+
+    await client.disconnect();
+  });
+
+  it('treats CREATE EXTENSION as a no-op when using pg-mem', async () => {
+    process.env.NODE_ENV = 'test';
+    delete process.env.DATABASE_URL;
+
+    const { createDatabaseClient } = await import('./client');
+
+    const client = createDatabaseClient();
+    await client.connect();
+
+    const pool = client.pool!;
+    const originalQuery = pool.query.bind(pool);
+    const querySpy = vi
+      .spyOn(pool, 'query')
+      .mockImplementation(async (text: unknown, params?: ReadonlyArray<unknown>) => {
+        if (typeof text === 'string' && text.trim().toUpperCase().startsWith('CREATE EXTENSION')) {
+          throw new Error('CREATE EXTENSION should be skipped');
+        }
+
+        return originalQuery(text as string, params);
+      });
+
+    client.bootstrapped = false;
+
+    await expect(
+      // @ts-expect-error accessing private method for test coverage
+      client['bootstrapSchema'](pool),
+    ).resolves.not.toThrow();
+
+    expect(querySpy).toHaveBeenCalled();
+
+    querySpy.mockRestore();
+    await client.disconnect();
   });
 });

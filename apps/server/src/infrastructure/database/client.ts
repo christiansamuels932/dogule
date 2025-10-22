@@ -1,8 +1,5 @@
-import { randomUUID } from 'crypto';
-
 import { Pool, QueryResult } from 'pg';
 import { IMemoryDb, newDb } from 'pg-mem';
-import type { DataType } from 'pg-mem';
 
 import { ErrorCode, LogCode } from '@dogule/domain';
 import { logError, logInfo, logWarn } from '@dogule/utils';
@@ -61,16 +58,17 @@ export class DatabaseClient {
     } else {
       try {
         this.memoryDb = newDb();
-        this.memoryDb.public.registerFunction({
+        const { public: publicSchema } = this.memoryDb;
+        publicSchema.registerFunction({
           name: 'gen_random_uuid',
-          returns: 'uuid' as unknown as DataType,
-          implementation: () => randomUUID(),
+          returns: 'uuid',
+          implementation: () => require('node:crypto').randomUUID(),
           impure: true,
         });
-        this.memoryDb.public.registerFunction({
-          name: 'random_uuid_text',
-          returns: 'text' as unknown as DataType,
-          implementation: () => randomUUID(),
+        publicSchema.registerFunction({
+          name: 'uuid_generate_v4',
+          returns: 'uuid',
+          implementation: () => require('node:crypto').randomUUID(),
           impure: true,
         });
         const { Pool: MemoryPool } = this.memoryDb.adapters.createPg();
@@ -123,17 +121,16 @@ export class DatabaseClient {
       return;
     }
 
+    this.bootstrapped = true;
+
     try {
       const statements: string[] = [];
 
-      if (this.mode === 'postgres') {
-        statements.push('CREATE EXTENSION IF NOT EXISTS pgcrypto;');
-      }
+      statements.push('CREATE EXTENSION IF NOT EXISTS pgcrypto;');
 
-      const isPostgres = this.mode === 'postgres';
       const isMemory = this.mode === 'memory';
-      const uuidType = isPostgres ? 'UUID' : 'TEXT';
-      const uuidDefault = isPostgres ? ' DEFAULT gen_random_uuid()' : ' DEFAULT random_uuid_text()';
+      const uuidType = 'UUID';
+      const uuidDefault = ' DEFAULT gen_random_uuid()';
       const kundenIdType = uuidType;
       const kundenIdDefault = uuidDefault;
       const userIdType = uuidType;
@@ -246,11 +243,15 @@ ${kundenColumns}
       `);
 
       for (const statement of statements) {
+        if (this.mode === 'memory' && statement.trim().toUpperCase().startsWith('CREATE EXTENSION')) {
+          continue;
+        }
+
         await pool.query(statement);
       }
-      this.bootstrapped = true;
       logInfo(LogCode.LOG_DB_BOOTSTRAP_001);
     } catch (error) {
+      this.bootstrapped = false;
       logError(ErrorCode.ERR_DB_BOOTSTRAP_001, error);
       throw new Error(ErrorCode.ERR_DB_BOOTSTRAP_001);
     }
