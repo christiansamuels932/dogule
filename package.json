@@ -12,6 +12,8 @@
     "dev:web": "npm run dev -w apps/web || echo ERR_WEB_DEV_001",
     "dev:remote": "concurrently -k \"npm:dev:server\" \"npm:dev:web\" || echo ERR_REMOTE_DEV_001",
     "dev": "npm run dev:remote",
+    "build:libs": "npm run build -w @dogule/domain && npm run build -w @dogule/utils && npm run build -w @dogule/testing && npm run build -w @dogule/sdk",
+    "prepare": "npm run build:libs",
     "build": "npm run build -w apps/web && npm run build -w apps/server || echo ERR_BUILD_001",
     "test": "npm run test -ws || echo ERR_TEST_001",
     "lint": "eslint . --ext .ts,.tsx",
