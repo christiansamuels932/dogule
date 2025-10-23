@@ -11,6 +11,54 @@ const JSON_MIME_PATTERN = /application\/json/i;
 
 type FetchImplementation = typeof fetch;
 
+const DEFAULT_ORIGIN =
+  typeof globalThis.location?.origin === "string"
+    ? globalThis.location.origin
+    : "http://localhost";
+
+const BASE = process.env.SDK_BASE ?? "/api";
+
+let base = normalizeBase(BASE);
+
+export function setBaseUrl(candidate: string) {
+  base = normalizeBase(candidate);
+}
+
+function normalizeBase(candidate: string): string {
+  const value = candidate?.trim() || "/api";
+
+  const toAbsolute = (input: string) => {
+    if (/^[a-zA-Z][a-zA-Z\d+.-]*:/.test(input)) {
+      return input;
+    }
+
+    const relative = input.startsWith("/") ? input : `/${input}`;
+    return new URL(relative, DEFAULT_ORIGIN).toString();
+  };
+
+  const url = new URL(toAbsolute(value));
+
+  if (!url.pathname.endsWith("/")) {
+    url.pathname = `${url.pathname.replace(/\/?$/, "")}/`;
+  }
+
+  return url.toString();
+}
+
+function buildUrl(path: string, baseUrl: string): URL {
+  const normalizedPath = path.replace(/^\/+/, "");
+  return new URL(normalizedPath, baseUrl);
+}
+
+function wrapNetworkError(error: unknown): never {
+  const message =
+    error instanceof Error && error.message
+      ? error.message
+      : "Network request failed";
+
+  throw new SDKError("ERR_SDK_FETCH_001", message, 0, error ?? undefined);
+}
+
 function buildErrorCode(resource: ResourceName, payload?: BackendErrorPayload, status?: number) {
   const candidate =
     payload?.code ?? payload?.error ?? (status ? `HTTP_${status}` : "UNKNOWN");
@@ -42,6 +90,9 @@ export interface RequestClient {
 export function createRequestClient(config: SDKConfig): RequestClient {
   let credentials: Credentials = { ...config.credentials };
   const fetchImpl = ensureFetch(config.fetch);
+  const configBase = config.baseUrl ? normalizeBase(config.baseUrl) : null;
+
+  const resolveBaseUrl = () => configBase ?? base;
 
   const commitCredentials = (updated: Credentials) => {
     credentials = updated;
@@ -49,14 +100,20 @@ export function createRequestClient(config: SDKConfig): RequestClient {
   };
 
   const refreshCredentials = async () => {
-    const response = await fetchImpl(new URL("/auth/refresh", config.baseUrl), {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        accept: "application/json",
-      },
-      body: JSON.stringify({ refreshToken: credentials.refreshToken }),
-    });
+    let response: Response;
+
+    try {
+      response = await fetchImpl(buildUrl("auth/refresh", resolveBaseUrl()), {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          accept: "application/json",
+        },
+        body: JSON.stringify({ refreshToken: credentials.refreshToken }),
+      });
+    } catch (error) {
+      throw wrapNetworkError(error);
+    }
 
     if (!response.ok) {
       const payload = await safeParseJson(response);
@@ -104,11 +161,17 @@ export function createRequestClient(config: SDKConfig): RequestClient {
       requestBody = JSON.stringify(body);
     }
 
-    const response = await fetchImpl(new URL(path, config.baseUrl), {
-      ...init,
-      headers,
-      body: requestBody,
-    });
+    let response: Response;
+
+    try {
+      response = await fetchImpl(buildUrl(path, resolveBaseUrl()), {
+        ...init,
+        headers,
+        body: requestBody,
+      });
+    } catch (error) {
+      throw wrapNetworkError(error);
+    }
 
     if (response.status === 401 && !isRetry) {
       await refreshCredentials();
@@ -152,6 +215,11 @@ async function safeParseJson(response: Response): Promise<BackendErrorPayload | 
   try {
     return (await response.json()) as BackendErrorPayload;
   } catch (error) {
-    return null;
+    const message =
+      error instanceof Error && error.message
+        ? error.message
+        : "Failed to parse JSON response";
+
+    throw new SDKError("ERR_SDK_JSON_001", message, response.status, error ?? undefined);
   }
 }

@@ -4,7 +4,7 @@ export interface Credentials {
 }
 
 export interface SDKConfig {
-  baseUrl: string;
+  baseUrl?: string;
   credentials: Credentials;
   fetch?: typeof fetch;
   onCredentialsChange?: (credentials: Credentials) => void;

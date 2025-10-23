@@ -1,11 +1,15 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { RefreshError, createDoguleSDK } from "./index.js";
+import { RefreshError, createDoguleSDK, setBaseUrl } from "./index.js";
+
+beforeEach(() => {
+  setBaseUrl("/api");
+});
 
 describe("Dogule SDK", () => {
-  it("applies base URL and authorization header", async () => {
+  it("applies the default /api base URL and authorization header", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo, init?: RequestInit) => {
-      expect(String(input)).toBe("https://api.example.com/kunden");
+      expect(String(input)).toBe("http://localhost/api/kunden");
       const headers = new Headers(init?.headers);
       expect(headers.get("authorization")).toBe("Bearer token-123");
       expect(headers.get("accept")).toBe("application/json");
@@ -17,7 +21,6 @@ describe("Dogule SDK", () => {
     });
 
     const sdk = createDoguleSDK({
-      baseUrl: "https://api.example.com",
       credentials: {
         accessToken: "token-123",
         refreshToken: "refresh-123",
@@ -31,6 +34,7 @@ describe("Dogule SDK", () => {
   });
 
   it("refreshes credentials after a 401 response and retries the request", async () => {
+    setBaseUrl("https://api.example.com/api");
     const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
 
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -44,7 +48,7 @@ describe("Dogule SDK", () => {
       }
 
       if (calls.length === 2) {
-        expect(String(input)).toBe("https://api.example.com/auth/refresh");
+        expect(String(input)).toBe("https://api.example.com/api/auth/refresh");
         return new Response(
           JSON.stringify({
             accessToken: "token-456",
@@ -74,7 +78,6 @@ describe("Dogule SDK", () => {
     const onCredentialsChange = vi.fn();
 
     const sdk = createDoguleSDK({
-      baseUrl: "https://api.example.com",
       credentials: {
         accessToken: "token-123",
         refreshToken: "refresh-123",
@@ -112,7 +115,6 @@ describe("Dogule SDK", () => {
     });
 
     const sdk = createDoguleSDK({
-      baseUrl: "https://api.example.com",
       credentials: {
         accessToken: "token-123",
         refreshToken: "refresh-123",
@@ -129,6 +131,7 @@ describe("Dogule SDK", () => {
   });
 
   it("throws refresh error when refresh endpoint fails", async () => {
+    setBaseUrl("https://api.example.com/api");
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       if (String(input).endsWith("/auth/refresh")) {
         return new Response(JSON.stringify({ message: "Refresh failed" }), {
@@ -144,7 +147,6 @@ describe("Dogule SDK", () => {
     });
 
     const sdk = createDoguleSDK({
-      baseUrl: "https://api.example.com",
       credentials: {
         accessToken: "token-123",
         refreshToken: "refresh-123",
@@ -153,5 +155,45 @@ describe("Dogule SDK", () => {
     });
 
     await expect(() => sdk.hunde.list()).rejects.toBeInstanceOf(RefreshError);
+  });
+
+  it("throws ERR_SDK_FETCH_001 when fetch rejects", async () => {
+    const fetchMock = vi.fn(async () => {
+      throw new TypeError("Network down");
+    });
+
+    const sdk = createDoguleSDK({
+      credentials: {
+        accessToken: "token-123",
+        refreshToken: "refresh-123",
+      },
+      fetch: fetchMock,
+    });
+
+    await expect(() => sdk.kunden.list()).rejects.toMatchObject({
+      code: "ERR_SDK_FETCH_001",
+      message: "Network down",
+    });
+  });
+
+  it("throws ERR_SDK_JSON_001 when JSON parsing fails", async () => {
+    const fetchMock = vi.fn(async () => {
+      return new Response("not json", {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+
+    const sdk = createDoguleSDK({
+      credentials: {
+        accessToken: "token-123",
+        refreshToken: "refresh-123",
+      },
+      fetch: fetchMock,
+    });
+
+    await expect(() => sdk.kunden.list()).rejects.toMatchObject({
+      code: "ERR_SDK_JSON_001",
+    });
   });
 });
