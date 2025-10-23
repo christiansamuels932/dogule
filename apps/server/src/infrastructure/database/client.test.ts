@@ -126,6 +126,7 @@ describe('DatabaseClient ensurePool', () => {
     const result = await client.query<{ value: number }>({ text: 'SELECT 1 AS value' });
     expect(result).toEqual([{ value: 1 }]);
 
+    expect(infoSpy).toHaveBeenCalledWith(LogCode.LOG_DB_UUID_SHIM_001);
     expect(infoSpy).toHaveBeenCalledWith(LogCode.LOG_DB_READY_002);
     expect(infoSpy).toHaveBeenCalledWith(LogCode.LOG_DB_BOOTSTRAP_001);
   });
