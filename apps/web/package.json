@@ -13,6 +13,7 @@
     "prealpha:smoke": "npx playwright test --config e2e/playwright.prealpha.config.ts"
   },
   "dependencies": {
+    "@dogule/sdk": "workspace:*",
     "@dogule/domain": "workspace:*",
     "@dogule/testing": "workspace:*",
     "@dogule/utils": "workspace:*",
