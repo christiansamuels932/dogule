@@ -1,5 +1,7 @@
 import { RequestHandler } from 'express';
-import jwt, { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
+
+const { JsonWebTokenError, TokenExpiredError } = jwt as any;
 
 import { ErrorCode } from '@dogule/domain';
 import { logWarn } from '@dogule/utils';
