@@ -59,20 +59,26 @@ export class DatabaseClient {
     } else {
       try {
         const db = newDb({ autoCreateForeignKeyIndices: true });
-        db.public.registerFunction({
-          name: 'gen_random_uuid',
-          args: [],
-          returns: 'uuid',
-          implementation: () => randomUUID(),
-          impure: true,
-        });
-        db.public.registerFunction({
-          name: 'uuid_generate_v4',
-          args: [],
-          returns: 'uuid',
-          implementation: () => randomUUID(),
-          impure: true,
-        });
+        try {
+          db.public.registerFunction({
+            name: 'gen_random_uuid',
+            args: [],
+            returns: 'uuid',
+            implementation: () => randomUUID(),
+            impure: true,
+          });
+          db.public.registerFunction({
+            name: 'uuid_generate_v4',
+            args: [],
+            returns: 'uuid',
+            implementation: () => randomUUID(),
+            impure: true,
+          });
+          logInfo(LogCode.LOG_DB_UUID_SHIM_001);
+        } catch (error) {
+          logError(ErrorCode.ERR_DB_UUID_SHIM_001, error);
+          throw error;
+        }
         this.memoryDb = db;
         const { Pool: MemoryPool } = db.adapters.createPg();
         this.pool = new MemoryPool() as unknown as Pool;
