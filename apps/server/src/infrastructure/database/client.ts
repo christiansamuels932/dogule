@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Pool, QueryResult } from 'pg';
 import { IMemoryDb, newDb } from 'pg-mem';
 
@@ -57,21 +58,23 @@ export class DatabaseClient {
       logInfo(LogCode.LOG_DB_READY_001, this.url);
     } else {
       try {
-        this.memoryDb = newDb();
-        const { public: publicSchema } = this.memoryDb;
-        publicSchema.registerFunction({
+        const db = newDb({ autoCreateForeignKeyIndices: true });
+        db.public.registerFunction({
           name: 'gen_random_uuid',
+          args: [],
           returns: 'uuid',
-          implementation: () => require('node:crypto').randomUUID(),
+          implementation: () => randomUUID(),
           impure: true,
         });
-        publicSchema.registerFunction({
+        db.public.registerFunction({
           name: 'uuid_generate_v4',
+          args: [],
           returns: 'uuid',
-          implementation: () => require('node:crypto').randomUUID(),
+          implementation: () => randomUUID(),
           impure: true,
         });
-        const { Pool: MemoryPool } = this.memoryDb.adapters.createPg();
+        this.memoryDb = db;
+        const { Pool: MemoryPool } = db.adapters.createPg();
         this.pool = new MemoryPool() as unknown as Pool;
       } catch (error) {
         logError(ErrorCode.ERR_DB_CONNECT_001, error);
@@ -242,18 +245,27 @@ ${kundenColumns}
         CREATE INDEX IF NOT EXISTS idx_kommunikation_created_at ON kommunikation(created_at);
       `);
 
-      for (const statement of statements) {
-        if (this.mode === 'memory' && statement.trim().toUpperCase().startsWith('CREATE EXTENSION')) {
-          continue;
-        }
+      const schemaSql = statements.join('\n');
 
-        await pool.query(statement);
+      if (this.mode === 'memory' && this.memoryDb) {
+        const stripCreateExtension = (sql: string) =>
+          sql
+            .split('\n')
+            .filter((line) => !/^\s*CREATE\s+EXTENSION\b/i.test(line))
+            .join('\n');
+        this.memoryDb.public.none(stripCreateExtension(schemaSql));
+      } else {
+        for (const statement of statements) {
+          await pool.query(statement);
+        }
       }
+      console.log('LOG_DB_BOOTSTRAP_001');
       logInfo(LogCode.LOG_DB_BOOTSTRAP_001);
     } catch (error) {
       this.bootstrapped = false;
+      console.error('ERR_DB_BOOTSTRAP_001', error);
       logError(ErrorCode.ERR_DB_BOOTSTRAP_001, error);
-      throw new Error(ErrorCode.ERR_DB_BOOTSTRAP_001);
+      throw error;
     }
   }
 }
