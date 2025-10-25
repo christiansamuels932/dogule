@@ -8,7 +8,16 @@
       "DOM",
       "DOM.Iterable"
     ],
-    "moduleResolution": "Bundler"
+    "moduleResolution": "Bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@dogule/domain": [
+        "../../packages/domain/src"
+      ],
+      "@dogule/testing": [
+        "../../packages/testing/src"
+      ]
+    }
   },
   "include": [
     "src",
