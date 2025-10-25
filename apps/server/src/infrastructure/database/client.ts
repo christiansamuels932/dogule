@@ -134,9 +134,11 @@ export class DatabaseClient {
     try {
       const statements: string[] = [];
 
-      statements.push('CREATE EXTENSION IF NOT EXISTS pgcrypto;');
-
       const isMemory = this.mode === 'memory';
+      if (!isMemory) {
+        statements.push('CREATE EXTENSION IF NOT EXISTS pgcrypto;');
+      }
+
       const uuidType = 'UUID';
       const uuidDefault = ` DEFAULT ${isMemory ? 'uuid_generate_v4()' : 'gen_random_uuid()'}`;
       const kundenIdType = uuidType;
