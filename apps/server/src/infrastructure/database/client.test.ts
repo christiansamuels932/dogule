@@ -126,6 +126,19 @@ describe('DatabaseClient ensurePool', () => {
     const result = await client.query<{ value: number }>({ text: 'SELECT 1 AS value' });
     expect(result).toEqual([{ value: 1 }]);
 
+    const uuidResult = await client.query<{ id: string }>({
+      text: 'SELECT uuid_generate_v4() AS id',
+    });
+    expect(uuidResult).toHaveLength(1);
+    expect(uuidResult[0]?.id).toMatch(UUID_REGEX);
+
+    const insertResult = await client.query<{ id: string }>({
+      text: 'INSERT INTO kunden(first_name) VALUES ($1) RETURNING id',
+      params: ['Max'],
+    });
+    expect(insertResult).toHaveLength(1);
+    expect(insertResult[0]?.id).toMatch(UUID_REGEX);
+
     expect(infoSpy).toHaveBeenCalledWith(LogCode.LOG_DB_UUID_SHIM_001);
     expect(infoSpy).toHaveBeenCalledWith(LogCode.LOG_DB_READY_002);
     expect(infoSpy).toHaveBeenCalledWith(LogCode.LOG_DB_BOOTSTRAP_001);
@@ -158,6 +171,11 @@ describe('DatabaseClient ensurePool', () => {
     expect(instance.connectionString).toBe('postgres://postgres:postgres@localhost:5432/dogule');
     expect(instance.queries[0]?.text).toBe('SELECT 1');
     expect(instance.queries.some((query) => query.text.includes('CREATE TABLE IF NOT EXISTS users'))).toBe(true);
+    expect(
+      instance.queries.some((query) =>
+        query.text.includes('DEFAULT gen_random_uuid()'),
+      ),
+    ).toBe(true);
 
     expect(infoSpy).toHaveBeenCalledWith(
       LogCode.LOG_DB_READY_001,

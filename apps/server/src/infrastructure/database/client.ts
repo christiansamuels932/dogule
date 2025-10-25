@@ -7,6 +7,21 @@ import { logError, logInfo, logWarn } from '@dogule/utils';
 
 const generateRandomUuid = (): string => randomUUID();
 
+const registerPgMemUuidFunctions = (db: IMemoryDb): void => {
+  const register = (name: 'gen_random_uuid' | 'uuid_generate_v4') => {
+    db.public.registerFunction({
+      name,
+      args: [],
+      returns: 'uuid',
+      implementation: generateRandomUuid,
+      impure: true,
+    });
+  };
+
+  register('gen_random_uuid');
+  register('uuid_generate_v4');
+};
+
 export interface QueryOptions {
   text: string;
   params?: ReadonlyArray<unknown>;
@@ -62,20 +77,7 @@ export class DatabaseClient {
       try {
         const db = newDb({ autoCreateForeignKeyIndices: true });
         try {
-          db.public.registerFunction({
-            name: 'gen_random_uuid',
-            args: [],
-            returns: 'uuid',
-            implementation: generateRandomUuid,
-            impure: true,
-          });
-          db.public.registerFunction({
-            name: 'uuid_generate_v4',
-            args: [],
-            returns: 'uuid',
-            implementation: generateRandomUuid,
-            impure: true,
-          });
+          registerPgMemUuidFunctions(db);
           logInfo(LogCode.LOG_DB_UUID_SHIM_001);
         } catch (error) {
           logError(ErrorCode.ERR_DB_UUID_SHIM_001, error);
@@ -141,7 +143,7 @@ export class DatabaseClient {
 
       const isMemory = this.mode === 'memory';
       const uuidType = 'UUID';
-      const uuidDefault = ' DEFAULT gen_random_uuid()';
+      const uuidDefault = ` DEFAULT ${isMemory ? 'uuid_generate_v4()' : 'gen_random_uuid()'}`;
       const kundenIdType = uuidType;
       const kundenIdDefault = uuidDefault;
       const userIdType = uuidType;
