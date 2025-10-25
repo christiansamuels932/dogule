@@ -10,7 +10,7 @@
     "dev": "tsx src/index.ts",
     "spec:generate": "tsx scripts/spec-generate.ts",
     "spec:check": "tsx scripts/spec-check.ts",
-    "typecheck": "tsc -p tsconfig.typecheck.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
@@ -31,6 +31,7 @@
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^20.0.0",
     "@types/supertest": "^2.0.16",
     "@vitest/coverage-v8": "^1.6.1",
     "supertest": "^6.3.4",
