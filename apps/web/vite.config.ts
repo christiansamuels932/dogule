@@ -8,12 +8,17 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@dogule/domain': path.resolve(__dirname, '../../packages/domain/src'),
-      '@dogule/testing': path.resolve(__dirname, '../../packages/testing/src'),
+      '@dogule/domain': path.resolve(__dirname, '../../packages/domain'),
+      '@dogule/testing': path.resolve(__dirname, '../../packages/testing'),
     },
   },
   optimizeDeps: {
-    exclude: ['@dogule/domain', '@dogule/testing'],
+    include: ['@dogule/domain', '@dogule/testing'],
+  },
+  build: {
+    commonjsOptions: {
+      include: [/packages[\\/](domain|testing)[\\/]/, /node_modules/],
+    },
   },
   server: {
     proxy: {
