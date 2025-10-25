@@ -5,23 +5,6 @@ import { IMemoryDb, newDb } from 'pg-mem';
 import { ErrorCode, LogCode } from '@dogule/domain';
 import { logError, logInfo, logWarn } from '@dogule/utils';
 
-const generateRandomUuid = (): string => randomUUID();
-
-const registerPgMemUuidFunctions = (db: IMemoryDb): void => {
-  const register = (name: 'gen_random_uuid' | 'uuid_generate_v4') => {
-    db.public.registerFunction({
-      name,
-      args: [],
-      returns: 'uuid',
-      implementation: generateRandomUuid,
-      impure: true,
-    });
-  };
-
-  register('gen_random_uuid');
-  register('uuid_generate_v4');
-};
-
 export interface QueryOptions {
   text: string;
   params?: ReadonlyArray<unknown>;
@@ -77,8 +60,20 @@ export class DatabaseClient {
       try {
         const db = newDb({ autoCreateForeignKeyIndices: true });
         try {
-          registerPgMemUuidFunctions(db);
-          logInfo(LogCode.LOG_DB_UUID_SHIM_001);
+          const register = (name: 'gen_random_uuid' | 'uuid_generate_v4') => {
+            db.public.registerFunction({
+              name,
+              args: [],
+              returns: 'uuid',
+              implementation: () => randomUUID(),
+              impure: true,
+            });
+          };
+
+          register('gen_random_uuid');
+          register('uuid_generate_v4');
+
+          logInfo(LogCode.LOG_DB_UUID_SHIM_001, db.public.mocks.has('gen_random_uuid'));
         } catch (error) {
           logError(ErrorCode.ERR_DB_UUID_SHIM_001, error);
           throw error;
