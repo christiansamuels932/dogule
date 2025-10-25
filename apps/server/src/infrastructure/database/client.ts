@@ -5,6 +5,8 @@ import { IMemoryDb, newDb } from 'pg-mem';
 import { ErrorCode, LogCode } from '@dogule/domain';
 import { logError, logInfo, logWarn } from '@dogule/utils';
 
+const generateRandomUuid = (): string => randomUUID();
+
 export interface QueryOptions {
   text: string;
   params?: ReadonlyArray<unknown>;
@@ -64,14 +66,14 @@ export class DatabaseClient {
             name: 'gen_random_uuid',
             args: [],
             returns: 'uuid',
-            implementation: () => randomUUID(),
+            implementation: generateRandomUuid,
             impure: true,
           });
           db.public.registerFunction({
             name: 'uuid_generate_v4',
             args: [],
             returns: 'uuid',
-            implementation: () => randomUUID(),
+            implementation: generateRandomUuid,
             impure: true,
           });
           logInfo(LogCode.LOG_DB_UUID_SHIM_001);
@@ -265,11 +267,9 @@ ${kundenColumns}
           await pool.query(statement);
         }
       }
-      console.log('LOG_DB_BOOTSTRAP_001');
       logInfo(LogCode.LOG_DB_BOOTSTRAP_001);
     } catch (error) {
       this.bootstrapped = false;
-      console.error('ERR_DB_BOOTSTRAP_001', error);
       logError(ErrorCode.ERR_DB_BOOTSTRAP_001, error);
       throw error;
     }

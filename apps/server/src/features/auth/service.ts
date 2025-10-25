@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID } from 'crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
