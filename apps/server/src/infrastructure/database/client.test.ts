@@ -139,7 +139,7 @@ describe('DatabaseClient ensurePool', () => {
     expect(insertResult).toHaveLength(1);
     expect(insertResult[0]?.id).toMatch(UUID_REGEX);
 
-    expect(infoSpy).toHaveBeenCalledWith(LogCode.LOG_DB_UUID_SHIM_001);
+    expect(infoSpy).toHaveBeenCalledWith(LogCode.LOG_DB_UUID_SHIM_001, true);
     expect(infoSpy).toHaveBeenCalledWith(LogCode.LOG_DB_READY_002);
     expect(infoSpy).toHaveBeenCalledWith(LogCode.LOG_DB_BOOTSTRAP_001);
   });
